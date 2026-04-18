@@ -1,0 +1,894 @@
+-- SERVICES
+-- =====================
+task.wait(3)
+local GameStarted = false
+local GameRunning = true
+local bossDead = false
+local RS = game:GetService("ReplicatedStorage")
+local player = game.Players.LocalPlayer
+local gold = player:WaitForChild("leaderstats"):WaitForChild("Gold")
+local RunService = game:GetService("RunService")
+local Towers = workspace:WaitForChild("Towers")
+local ignore = {}
+
+local function isIgnored(pos)
+    for _,v in ipairs(ignore) do
+        if (v - pos).Magnitude < 3 then -- 🔥 radius fix
+            return true
+        end
+    end
+    return false
+end
+
+-- =====================
+-- SIMPLE GUI (AUTO)
+-- =====================
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AutoFarmUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- FRAME
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 130)
+frame.Position = UDim2.new(0, 10, 0.5, -55)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+-- UI CORNER
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 8)
+
+-- TITLE
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,20)
+title.BackgroundTransparency = 1
+title.Text = "AUTO FARM 69"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+-- GOLD
+goldLabel = Instance.new("TextLabel")
+goldLabel.Size = UDim2.new(1,0,0,20)
+goldLabel.Position = UDim2.new(0,0,0,20)
+goldLabel.BackgroundTransparency = 1
+goldLabel.TextColor3 = Color3.fromRGB(255,255,0)
+goldLabel.Text = "Gold: 0"
+goldLabel.TextScaled = true
+goldLabel.Font = Enum.Font.Gotham
+goldLabel.Parent = frame
+
+-- NEED
+needLabel = Instance.new("TextLabel")
+needLabel.Size = UDim2.new(1,0,0,20)
+needLabel.Position = UDim2.new(0,0,0,40)
+needLabel.BackgroundTransparency = 1
+needLabel.TextColor3 = Color3.fromRGB(255,100,100)
+needLabel.Text = "Need: 0"
+needLabel.TextScaled = true
+needLabel.Font = Enum.Font.Gotham
+needLabel.Parent = frame
+
+-- COST
+costLabel = Instance.new("TextLabel")
+costLabel.Size = UDim2.new(1,0,0,20)
+costLabel.Position = UDim2.new(0,0,0,60)
+costLabel.BackgroundTransparency = 1
+costLabel.TextColor3 = Color3.fromRGB(100,255,100)
+costLabel.Text = "Cost: 0"
+costLabel.TextScaled = true
+costLabel.Font = Enum.Font.Gotham
+costLabel.Parent = frame
+
+-- NEXT
+nextLabel = Instance.new("TextLabel")
+nextLabel.Size = UDim2.new(1,0,0,20)
+nextLabel.Position = UDim2.new(0,0,0,80)
+nextLabel.BackgroundTransparency = 1
+nextLabel.TextColor3 = Color3.fromRGB(150,150,255)
+nextLabel.Text = "Next: -"
+nextLabel.TextScaled = true
+nextLabel.Font = Enum.Font.Gotham
+nextLabel.Parent = frame
+
+local rebuildLabel = Instance.new("TextLabel")
+rebuildLabel.Size = UDim2.new(1,0,0,20)
+rebuildLabel.Position = UDim2.new(0,0,0,100)
+rebuildLabel.BackgroundTransparency = 1
+rebuildLabel.TextColor3 = Color3.fromRGB(255,150,150)
+rebuildLabel.Text = "Rebuild: False"
+rebuildLabel.TextScaled = true
+rebuildLabel.Font = Enum.Font.Gotham
+rebuildLabel.Parent = frame
+
+-- =====================
+-- DISCORD WEBHOOK
+-- =====================
+-- =====================
+-- WEBHOOK (REQUEST FIX)
+-- =====================
+-- =====================
+-- WEBHOOK (STABLE VERSION)
+-- =====================
+
+-- =====================
+-- STATE
+-- =====================
+local REBUILDING = false
+local rebuildQueue = {}
+local rebuildingNow = false
+local rebuildState = {
+    active = false,
+    name = "-",
+    level = 0
+}
+-- =====================
+-- VOTE
+-- =====================
+RS.Events.VoteForMap:FireServer("INSANE GeoCage")
+task.wait(1)
+RS.Events.VoteForMap:FireServer("Ready")
+
+task.spawn(function()
+    local info = workspace:WaitForChild("Info")
+    local gameRunning = info:WaitForChild("GameRunning")
+
+    task.wait(30) -- ⬅️ CHỐT FIX: đợi game start hẳn
+    GameStarted = true
+
+    while true do
+        task.wait(0.5)
+
+        if GameStarted and gameRunning.Value == false then
+            GameRunning = false
+            bossDead = true
+            break
+        end
+    end
+end)
+-- =====================
+-- RESULT CHECK (LOWERCASE FIX)
+-- =====================
+task.spawn(function()
+    local info = workspace:WaitForChild("Info")
+    local messages = info:WaitForChild("Message")
+    local wave = info:FindFirstChild("Wave")
+
+    local resultDetected = false
+
+    local function check(text)
+        text = string.lower(text)
+
+        if string.find(text, "victory") or string.find(text, "victory!") then
+            return "WIN"
+        end
+
+        if string.find(text, "game over") or string.find(text, "defeat") then
+            return "LOSE"
+        end
+    end
+
+    messages:GetPropertyChangedSignal("Value"):Connect(function()
+        if resultDetected then return end
+
+        local result = check(messages.Value)
+        if not result then return end
+
+        resultDetected = true
+        bossDead = true
+        GameRunning = false
+
+        local waveValue = wave and wave.Value or 0
+
+        -- 🔥 LOG ONLY (KHÔNG WEBHOOK)
+        if result == "WIN" then
+            print("🏆 VICTORY")
+            print("User:", player.Name)
+            print("Gold:", gold.Value)
+            print("Wave:", waveValue)
+        else
+            print("❌ DEFEAT")
+            print("User:", player.Name)
+            print("Gold:", gold.Value)
+            print("Wave:", waveValue)
+        end
+
+        -- 🔥 EXIT GAME
+        task.wait(1)
+        pcall(function()
+            RS.Events.ExitGame:FireServer()
+        end)
+    end)
+end)
+-- =====================
+-- COST SYSTEM
+-- =====================
+local effects = workspace.Info.TowerEffects
+local placeMulti = effects.PlacingTowerMultiplier
+local upgradeMulti = effects.UpgradePriceMultiplier
+
+local BASE_COST = {}
+
+for _, f in ipairs(RS.Towers:GetChildren()) do
+    for _, v in ipairs(f:GetChildren()) do
+        for _, lvl in ipairs(v:GetChildren()) do
+            for _, m in ipairs(lvl:GetChildren()) do
+                if m:IsA("Model") and m:FindFirstChild("Config") then
+                    local p = m.Config:FindFirstChild("Price")
+                    if p and not BASE_COST[m.Name] then
+                        BASE_COST[m.Name] = p.Value
+                    end
+                end
+            end
+        end
+    end
+end
+
+local CUSTOM_COST = {
+    ["Galaxy Wizard"] = 3500,
+    ["Galaxy Potions"] = 2000,
+    ["Galaxy Spells"] = 4400,
+    ["Enhanced Galaxy Spells"] = 7800,
+    ["Galactic Staff"] = 41650
+}
+
+local function getCost(name, up, towerInstance)
+    if CUSTOM_COST[name] then
+        return CUSTOM_COST[name]
+    end
+
+    local base = BASE_COST[name] or 0
+    local cost = base * (up and upgradeMulti.Value or placeMulti.Value)
+
+    -- 🔥 CheaperUpgrades (nếu có)
+    if towerInstance and towerInstance:FindFirstChild("Config") then
+        local cheaper = towerInstance.Config:FindFirstChild("CheaperUpgrades")
+        if cheaper then
+            cost = cost * cheaper.Value
+        end
+    end
+
+    return math.floor(cost + 1)
+end
+
+local UPGRADE_CHAIN = {
+    ["Guardian"] = {
+        "Deserted Armor",
+        "Snowy Helmet",
+        "Lava Knight",
+        "Electrifying Sword",
+        "Guardian Angel"
+    },
+
+    ["Laser Sniper"] = {
+        "Pro Sniper",
+        "Glowing Hat",
+        "More Grip",
+        "Heavy Clothes",
+        "Frosted Lasers"
+    },
+
+    ["Wizard"] = {
+        "Galaxy Potions",
+        "Galaxy Spells",
+        "Enhanced Galaxy Spells",
+        "Galactic Staff"
+    },
+
+    ["Machinist"] = {
+        "Faster Working",
+        "Second Machine",
+        "True Machinist",
+        "Futurist"
+    },
+
+    ["Lava Mortar"] = {
+        "Electric Hat",
+        "Lightning Lava",
+        "Electrically Trained",
+        "Mega Zap Mortar"
+    }
+}
+
+-- =====================
+-- WAIT GOLD
+-- =====================
+
+local currentTarget = {}
+
+local function waitGold(name, isUpgrade, towerInstance)
+    currentTarget.name = name
+    currentTarget.isUpgrade = isUpgrade
+
+    while true do
+        if bossDead then return false end
+
+        local cost = getCost(name, isUpgrade, towerInstance)
+
+        -- ❗ chỉ check điều kiện "ước lượng"
+        if gold.Value >= cost then
+
+            -- 🔥 RECHECK 1 LẦN CUỐI (fix bug chính)
+            task.wait(0.5)
+
+            local cost = getCost(name, isUpgrade, towerInstance)
+
+            if gold.Value >= cost then
+                return true
+            end
+        end
+
+        goldLabel.Text = "Gold: "..gold.Value
+        needLabel.Text = "Need: "..math.max(0, cost - gold.Value)
+        costLabel.Text = "Cost: "..cost
+        nextLabel.Text = "Next: "..name
+
+        task.wait(0.1)
+    end
+end
+
+local function waitGoldRebuild(name, isUpgrade, towerInstance)
+    while true do
+        if bossDead then return false end
+
+        local cost = getCost(name, isUpgrade, towerInstance)
+
+        -- ❗ check sơ bộ
+        if gold.Value >= cost then
+
+            -- 🔥 recheck để chống cost change giữa frame
+            task.wait(0.5)
+
+            if bossDead then return false end
+
+            local cost = getCost(name, isUpgrade, towerInstance)
+
+            if gold.Value >= cost then
+                return true
+            end
+        end
+
+        task.wait(0.1)
+    end
+end
+
+-- =====================
+-- SPAWN
+-- =====================
+local function spawn(args)
+    while REBUILDING and not rebuildingNow do task.wait() end
+    if bossDead then return end
+    return RS.Functions.SpawnTower:InvokeServer(unpack(args))
+end
+
+-- =====================
+-- SNAPSHOT
+-- =====================
+local function readTower(t)
+    local c = t:FindFirstChild("Class")
+    local s = t:FindFirstChild("Skin")
+    if not c or not s then return end
+
+    local lv = t:FindFirstChild("Level")
+    return {
+        class = c.Value,
+        skin = s.Value,
+        level = lv and lv.Value or 1,
+        pos = t:GetPivot().Position,
+        cf = t:GetPivot()
+    }
+end
+
+local function key(pos)
+    return math.floor(pos.X*10).."_"..math.floor(pos.Y*10).."_"..math.floor(pos.Z*10)
+end
+
+local function snapshot()
+    local snap = {}
+    for _,t in ipairs(Towers:GetChildren()) do
+        local d = readTower(t)
+        if d then snap[key(d.pos)] = d end
+    end
+    return snap
+end
+
+local lastSnapshot = snapshot()
+local debounce = {}
+-- =====================
+-- SPAWN BASE
+-- =====================
+local function spawnBase(data)
+    local name = data.skin ~= "Default" and data.skin or data.class
+
+    if not waitGoldRebuild(name, false) then return end
+
+    if data.skin == "Default" then
+        return spawn({data.class, data.cf, nil, data.class})
+    else
+        return spawn({data.skin, data.cf, nil, data.class, data.skin})
+    end
+end
+
+-- =====================
+-- UPGRADE (FIX CHUẨN)
+-- =====================
+local function upgradeTower(tower, lv)
+    local class = tower:FindFirstChild("Class").Value
+    local chain = UPGRADE_CHAIN[class]
+
+    if not chain then return nil end
+
+    local upgradeName = chain[lv-1]
+    if not upgradeName then return nil end
+
+    -- wait đủ tiền
+    if not waitGoldRebuild(upgradeName, true, tower) then
+        return nil
+    end
+
+    local newTower = spawn({
+        upgradeName,
+        tower:GetPivot(),
+        tower,
+        class
+    })
+
+    -- 🔥 CHỈ return khi thành công
+    if newTower then
+        return newTower
+    end
+
+    return nil
+end
+
+-- =====================
+-- REBUILD QUEUE
+-- =====================
+local function rebuild(data)
+    for _,v in ipairs(rebuildQueue) do
+        if (v.pos - data.pos).Magnitude < 1 then return end
+    end
+    table.insert(rebuildQueue, data)
+end
+
+-- =====================
+-- WORKER (SEQUENTIAL FIX)
+-- =====================
+task.spawn(function()
+    while true do
+        task.wait(0.05)
+
+        -- đang rebuild thì bỏ qua
+        if rebuildingNow then continue end
+        if #rebuildQueue == 0 then continue end
+
+        rebuildingNow = true
+        REBUILDING = true
+
+        local data = table.remove(rebuildQueue, 1)
+
+        if not data then
+            rebuildingNow = false
+            REBUILDING = false
+            continue
+        end
+        rebuildState.active = true
+        rebuildState.name = data.class
+        rebuildState.level = data.level
+
+        -- =====================
+        -- SPAWN BASE
+        -- =====================
+        -- =====================
+        -- SPAWN BASE (SAFE FIX)
+        -- =====================
+        local tower
+        local tries = 0
+        local maxTries = 3
+
+        while tries < maxTries do
+            tower = spawnBase(data)
+
+            if tower then
+                break
+            end
+
+            tries += 1
+            task.wait(0.3)
+        end
+
+        -- ❌ CHỈ bỏ job này, KHÔNG kill worker
+        if not tower then
+            REBUILDING = false
+            rebuildingNow = false
+            rebuildState.active = false
+            rebuildState.name = "-"
+            rebuildState.level = 0
+            continue
+        end
+
+        -- =====================
+        -- UPGRADE LOOP
+        -- =====================
+        for lv = 2, data.level do
+            if bossDead then break end
+            if not tower or not tower.Parent then break end
+
+            local upgraded = false
+
+            while not upgraded do
+                if bossDead then break end
+                if not tower or not tower.Parent then break end
+
+                local newTower = upgradeTower(tower, lv)
+
+                if newTower then
+                    tower = newTower
+                    upgraded = true
+                else
+                    -- ❗ retry chậm để tránh spam server
+                    task.wait(0.3)
+                end
+            end
+        end
+
+        -- =====================
+        -- DONE
+        -- =====================
+        REBUILDING = false
+        rebuildingNow = false
+        rebuildState.active = false
+        rebuildState.name = "-"
+        rebuildState.level = 0
+    end
+end)
+
+-- =====================
+-- DETECT DELETE
+-- =====================
+local function process()
+    local now = snapshot()
+
+
+    for k,old in pairs(lastSnapshot) do
+        if isIgnored(old.pos) then continue end -- ⬅️ bỏ qua upgrade
+        if not now[k] and not debounce[k] then
+            debounce[k] = true
+
+            task.delay(1,function()
+                  rebuild(old)
+            debounce[k] = nil
+            end)
+            end
+        end
+    lastSnapshot = now
+end
+
+RunService.Heartbeat:Connect(process)
+task.wait(1)
+lastSnapshot = snapshot()
+
+-- =====================
+-- SAFE WAIT
+-- =====================
+local function safeWait()
+    while REBUILDING or rebuildingNow do task.wait() end
+end
+
+local function markUpgrade(cf)
+    local pos = cf.Position
+
+    table.insert(ignore, pos)
+
+    task.delay(0.5, function() -- 🔥 tăng delay
+        for i,v in ipairs(ignore) do
+            if (v - pos).Magnitude < 0.1 then
+                table.remove(ignore, i)
+                break
+            end
+        end
+    end)
+end
+
+-- =====================
+-- BUILD FLOW (GIỮ NGUYÊN)
+-- =====================
+-- (PHẦN NÀY GIỮ NGUYÊN 100% CODE EM)
+-- =====================
+-- HELPER
+-- =====================
+local function getTowerAt(cf, class)
+    for _,t in ipairs(Towers:GetChildren()) do
+        local c = t:FindFirstChild("Class")
+        if c and c.Value == class then
+            if (t:GetPivot().Position - cf.Position).Magnitude < 2 then
+                return t
+            end
+        end
+    end
+end
+
+local function fixTower(tower, cf, class)
+    if not tower or not tower.Parent then
+        tower = getTowerAt(cf, class)
+    end
+    return tower
+end
+
+task.spawn(function()
+    while true do
+        if rebuildState.active then
+            rebuildLabel.Text = "Rebuild: True (" ..
+                rebuildState.name .. " | Lv" .. rebuildState.level .. ")"
+        else
+            rebuildLabel.Text = "Rebuild: False"
+        end
+
+        task.wait(0.1)
+    end
+end)
+
+
+
+-- =====================
+-- SAFE FIX HELPERS
+-- =====================
+local function safeFix(tower, cf, class)
+    if not tower or not tower.Parent then
+        tower = fixTower(nil, cf, class)
+    end
+    return tower
+end
+-- =====================
+-- SAFE FIX HELPERS
+-- =====================
+
+
+-- =====================
+-- AUTO SPAWN WRAPPER (fiX MARK)
+-- =====================
+local function spawnTowerSafe(args)
+    local old = args[3]
+    local cf = args[2]
+
+    local t = spawn(args)
+
+    if t then
+        if old then
+            markUpgrade(old:GetPivot()) -- upgrade
+        else
+            markUpgrade(cf) -- place
+        end
+    end
+
+    return t
+end
+
+-- =====================
+-- 1. EXPLORER (4)
+-- =====================
+local explorerPos = {
+    CFrame.new(-221.7653,7.8147,-81.3051),
+    CFrame.new(-221.9095,7.8147,-78.5632),
+    CFrame.new(-225.7108,7.8147,-78.7834),
+    CFrame.new(-225.7969,7.8147,-81.4535),
+}
+ 
+for _,cf in ipairs(explorerPos) do
+    safeWait()
+    waitGold("Desert Explorer",false)
+    spawnTowerSafe({"Desert Explorer",cf,nil,"Explorer","Desert Explorer"})
+    task.wait(0.2)
+end
+ 
+-- =====================
+-- 2. GUARDIAN LV1 (6)
+-- =====================
+local guardians = {}
+ 
+local guardianPos = {
+    CFrame.new(-225.6411,7.8147,-84.9286),
+    CFrame.new(-223.0359,7.8147,-85.0404),
+    CFrame.new(-220.5131,7.8147,-85.0323),
+    CFrame.new(-220.7988,7.8147,-87.6007),
+    CFrame.new(-223.5070,7.8147,-87.6033),
+    CFrame.new(-226.1602,7.8147,-87.5709)
+}
+ 
+for i,cf in ipairs(guardianPos) do
+    safeWait()
+    waitGold("Guardian",false)
+    guardians[i] = spawnTowerSafe({"Guardian",cf,nil,"Guardian"})
+    task.wait(0.2)
+end
+ 
+-- =====================
+-- 3. SNIPER LV2 (6)
+-- =====================
+local snipers = {}
+ 
+local sniperPos = {
+    CFrame.new(-217.88,7.81,-85.06),
+    CFrame.new(-218.08,7.81,-87.63),
+    CFrame.new(-215.31,7.81,-85.09),
+    CFrame.new(-215.53,7.81,-87.81),
+    CFrame.new(-212.78,7.81,-85.09),
+    CFrame.new(-212.82,7.81,-87.65),
+}
+ 
+for i,cf in ipairs(sniperPos) do
+    safeWait()
+    waitGold("Laser Sniper",false)
+ 
+    local s = spawnTowerSafe({"Laser Sniper",cf,nil,"Laser Sniper"})
+    task.wait(0.2)
+ 
+    s = safeFix(s, cf, "Laser Sniper")
+ 
+    if s then
+        waitGold("Pro Sniper",true,s)
+        snipers[i] = spawnTowerSafe({"Pro Sniper",s:GetPivot(),s,"Laser Sniper"})
+    end
+end
+ 
+-- =====================
+-- 4. WIZARD LV5 (2)
+-- =====================
+local function fullWizard(cf)
+    safeWait()
+    waitGold("Galaxy Wizard",false)
+ 
+    local w = spawnTowerSafe({"Galaxy Wizard",cf,nil,"Wizard","Galaxy Wizard"})
+    task.wait(0.2)
+ 
+    w = safeFix(w, cf, "Wizard")
+    if not w then return end
+ 
+    waitGold("Galaxy Potions",true,w)
+    w = spawnTowerSafe({"Galaxy Potions",w:GetPivot(),w,"Wizard"})
+ 
+    waitGold("Galaxy Spells",true,w)
+    w = spawnTowerSafe({"Galaxy Spells",w:GetPivot(),w,"Wizard"})
+ 
+    waitGold("Enhanced Galaxy Spells",true,w)
+    w = spawnTowerSafe({"Enhanced Galaxy Spells",w:GetPivot(),w,"Wizard"})
+ 
+    waitGold("Galactic Staff",true,w)
+    return spawnTowerSafe({"Galactic Staff",w:GetPivot(),w,"Wizard"})
+end
+ 
+fullWizard(CFrame.new(-213.17,8.08,-80.96))
+fullWizard(CFrame.new(-209.98,8.05,-80.41))
+ 
+-- =====================
+-- 5. GUARDIAN UPGRADE
+-- =====================
+for i,g in ipairs(guardians) do
+    safeWait()
+    g = safeFix(g, guardianPos[i], "Guardian")
+    if g then
+        waitGold("Deserted Armor",true,g)
+        guardians[i] = spawnTowerSafe({"Deserted Armor",g:GetPivot(),g,"Guardian"})
+    end
+end
+ 
+for i,g in ipairs(guardians) do
+    safeWait()
+    g = safeFix(g, guardianPos[i], "Guardian")
+    if g then
+        waitGold("Snowy Helmet",true,g)
+        g = spawnTowerSafe({"Snowy Helmet",g:GetPivot(),g,"Guardian"})
+ 
+        waitGold("Lava Knight",true,g)
+        guardians[i] = spawnTowerSafe({"Lava Knight",g:GetPivot(),g,"Guardian"})
+    end
+end
+ 
+-- =====================
+-- MACHINIST
+-- =====================
+safeWait()
+waitGold("Machinist",false)
+ 
+local mPos = CFrame.new(-219.16,7.81,-81.14)
+ 
+local m = spawnTowerSafe({"Machinist",mPos,nil,"Machinist"})
+task.wait(0.2)
+ 
+m = safeFix(m, mPos, "Machinist")
+ 
+if m then
+    waitGold("Faster Working",true,m)
+    m = spawnTowerSafe({"Faster Working",m:GetPivot(),m,"Machinist"})
+ 
+    waitGold("Second Machine",true,m)
+    m = spawnTowerSafe({"Second Machine",m:GetPivot(),m,"Machinist"})
+ 
+    waitGold("True Machinist",true,m)
+    m = spawnTowerSafe({"True Machinist",m:GetPivot(),m,"Machinist"})
+ 
+    waitGold("Futurist",true,m)
+    m = spawnTowerSafe({"Futurist",m:GetPivot(),m,"Machinist"})
+end
+ 
+-- =====================
+-- SNIPER FINAL
+-- =====================
+for i,s in ipairs(snipers) do
+    safeWait()
+    s = safeFix(s, sniperPos[i], "Laser Sniper")
+ 
+    if s then
+        waitGold("Glowing Hat",true,s)
+        s = spawnTowerSafe({"Glowing Hat",s:GetPivot(),s,"Laser Sniper"})
+ 
+        waitGold("More Grip",true,s)
+        s = spawnTowerSafe({"More Grip",s:GetPivot(),s,"Laser Sniper"})
+ 
+        waitGold("Heavy Clothes",true,s)
+        s = spawnTowerSafe({"Heavy Clothes",s:GetPivot(),s,"Laser Sniper"})
+ 
+        waitGold("Frosted Lasers",true,s)
+        snipers[i] = spawnTowerSafe({"Frosted Lasers",s:GetPivot(),s,"Laser Sniper"})
+    end
+end
+ 
+-- =====================
+-- GUARDIAN FINAL
+-- =====================
+for i,g in ipairs(guardians) do
+    safeWait()
+    g = safeFix(g, guardianPos[i], "Guardian")
+ 
+    if g then
+        waitGold("Electrifying Sword",true,g)
+        g = spawnTowerSafe({"Electrifying Sword",g:GetPivot(),g,"Guardian"})
+ 
+        waitGold("Guardian Angel",true,g)
+        guardians[i] = spawnTowerSafe({"Guardian Angel",g:GetPivot(),g,"Guardian"})
+    end
+end
+ 
+-- =====================
+-- MORTAR
+-- =====================
+local mortarPos = {
+    CFrame.new(-210.1508,7.8045,-88.8045),
+    CFrame.new(-207.4105,7.8045,-88.3230),
+    CFrame.new(-207.2163,7.8045,-84.7498),
+    CFrame.new(-206.9319,7.8045,-81.8830),
+    CFrame.new(-210.1764,7.8045,-85.8999),
+    CFrame.new(-209.9492,7.8045,-83.2334)
+}
+ 
+local mortars = {}
+ 
+for i,cf in ipairs(mortarPos) do
+    safeWait()
+ 
+    waitGold("Electric Mortar",false)
+ 
+    local m = spawnTowerSafe({"Electric Mortar",cf,nil,"Lava Mortar","Electric Mortar"})
+    task.wait(0.2)
+ 
+    m = safeFix(m, cf, "Lava Mortar")
+ 
+    if m then
+        waitGold("Electric Hat",true,m)
+        m = spawnTowerSafe({"Electric Hat",m:GetPivot(),m,"Lava Mortar"})
+ 
+        waitGold("Lightning Lava",true,m)
+        m = spawnTowerSafe({"Lightning Lava",m:GetPivot(),m,"Lava Mortar"})
+ 
+        waitGold("Electrically Trained",true,m)
+        m = spawnTowerSafe({"Electrically Trained",m:GetPivot(),m,"Lava Mortar"})
+ 
+        waitGold("Mega Zap Mortar",true,m)
+        mortars[i] = spawnTowerSafe({"Mega Zap Mortar",m:GetPivot(),m,"Lava Mortar"})
+    end
+end
