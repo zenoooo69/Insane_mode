@@ -1,6 +1,6 @@
 -- SERVICES
 -- =====================
-task.wait(3)
+task.wait(1)
 local GameStarted = false
 local GameRunning = true
 local bossDead = false
@@ -138,7 +138,7 @@ task.spawn(function()
     local info = workspace:WaitForChild("Info")
     local gameRunning = info:WaitForChild("GameRunning")
 
-    task.wait(30) -- ⬅️ CHỐT FIX: đợi game start hẳn
+    task.wait(15) -- ⬅️ CHỐT FIX: đợi game start hẳn
     GameStarted = true
 
     while true do
@@ -316,7 +316,7 @@ local function waitGold(name, isUpgrade, towerInstance)
             -- 🔥 RECHECK 1 LẦN CUỐI (fix bug chính)
             task.wait(0.5)
 
-            local cost = getCost(name, isUpgrade, towerInstance)
+            cost = getCost(name, isUpgrade, towerInstance)
 
             if gold.Value >= cost then
                 return true
@@ -657,12 +657,14 @@ local function spawnTowerSafe(args)
     local cf = args[2]
     local name = args[1]
 
-    -- 🔥 CHECK LẠI COST NGAY TRƯỚC KHI GỬI SERVER
     local isUpgrade = old ~= nil
+
+    -- 🔁 CHỜ ĐỦ TIỀN THAY VÌ RETURN NIL
     local cost = getCost(name, isUpgrade, old)
 
-    if gold.Value < cost then
-        return nil -- ❌ không đủ tiền nữa
+    while gold.Value < cost do
+        task.wait(0.1) -- tránh lag, check lại liên tục
+        cost = getCost(name, isUpgrade, old) -- cập nhật lại cost nếu cần
     end
 
     local t = spawn(args)
@@ -881,7 +883,7 @@ for i,cf in ipairs(mortarPos) do
     safeWait()
  
     waitGold("Electric Mortar",false)
- 
+    task.wait(0.1)
     local m = spawnTowerSafe({"Electric Mortar",cf,nil,"Lava Mortar","Electric Mortar"})
     task.wait(0.2)
  
@@ -889,15 +891,17 @@ for i,cf in ipairs(mortarPos) do
  
     if m then
         waitGold("Electric Hat",true,m)
+        task.wait(0.1)
         m = spawnTowerSafe({"Electric Hat",m:GetPivot(),m,"Lava Mortar"})
- 
+        task.wait(0.1)
         waitGold("Lightning Lava",true,m)
         m = spawnTowerSafe({"Lightning Lava",m:GetPivot(),m,"Lava Mortar"})
- 
         waitGold("Electrically Trained",true,m)
+        task.wait(0.1)
         m = spawnTowerSafe({"Electrically Trained",m:GetPivot(),m,"Lava Mortar"})
  
         waitGold("Mega Zap Mortar",true,m)
+        task.wait(0.1)
         mortars[i] = spawnTowerSafe({"Mega Zap Mortar",m:GetPivot(),m,"Lava Mortar"})
     end
 end
