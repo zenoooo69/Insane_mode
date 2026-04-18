@@ -655,14 +655,23 @@ end
 local function spawnTowerSafe(args)
     local old = args[3]
     local cf = args[2]
+    local name = args[1]
+
+    -- 🔥 CHECK LẠI COST NGAY TRƯỚC KHI GỬI SERVER
+    local isUpgrade = old ~= nil
+    local cost = getCost(name, isUpgrade, old)
+
+    if gold.Value < cost then
+        return nil -- ❌ không đủ tiền nữa
+    end
 
     local t = spawn(args)
 
     if t then
         if old then
-            markUpgrade(old:GetPivot()) -- upgrade
+            markUpgrade(old:GetPivot())
         else
-            markUpgrade(cf) -- place
+            markUpgrade(cf)
         end
     end
 
