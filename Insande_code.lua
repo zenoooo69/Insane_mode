@@ -11,6 +11,36 @@ local RunService = game:GetService("RunService")
 local Towers = workspace:WaitForChild("Towers")
 local ignore = {}
 
+-- =====================
+-- AUTO CHARM
+-- =====================
+local RS = game:GetService("ReplicatedStorage")
+
+local AUTO_CHARM = true
+local COOLDOWN = 100
+local lastUse = 0
+
+task.spawn(function()
+    while true do
+        task.wait(1)
+
+        if not AUTO_CHARM then continue end
+        if bossDead then continue end -- 🔥 dừng khi game end
+
+        if tick() - lastUse >= COOLDOWN then
+            local success = pcall(function()
+                RS.Events.UseCharm:FireServer(3)
+            end)
+
+            if success then
+                lastUse = tick()
+                print("✨ Charm used")
+            end
+        end
+    end
+end)
+
+
 local function isIgnored(pos)
     for _,v in ipairs(ignore) do
         if (v - pos).Magnitude < 3 then -- 🔥 radius fix
@@ -648,32 +678,90 @@ end
 -- =====================
 -- AUTO SPAWN WRAPPER (fiX MARK)
 -- =====================
+local spawningLock = false
+
 local function spawnTowerSafe(args)
+    if spawningLock then return nil end
+    spawningLock = true
+
     local old = args[3]
-    local cf = args[2]
     local name = args[1]
-
     local isUpgrade = old ~= nil
+    local cf = args[2]
+    local class = args[4]
 
-    -- 🔁 CHỜ ĐỦ TIỀN THAY VÌ RETURN NIL
-    local cost = getCost(name, isUpgrade, old)
+    local startTime = os.clock()
+    local timeout = 60
 
-    while gold.Value < cost do
-        task.wait(0.1) -- tránh lag, check lại liên tục
-        cost = getCost(name, isUpgrade, old) -- cập nhật lại cost nếu cần
-    end
-
-    local t = spawn(args)
-
-    if t then
-        if old then
-            markUpgrade(old:GetPivot())
-        else
-            markUpgrade(cf)
+    while true do
+        if bossDead then
+            spawningLock = false
+            return nil
         end
-    end
 
-    return t
+        if os.clock() - startTime > timeout then
+            warn("❌ Timeout spawn:", name)
+            spawningLock = false
+            return nil
+        end
+
+        local cost = getCost(name, isUpgrade, old)
+
+        if gold.Value < cost then
+            task.wait(0.1)
+            continue
+        end
+
+        local before = gold.Value
+        local t = spawn(args)
+
+        -- 🔥 wait server sync (robust)
+        local after = before
+        local waited = 0
+
+        while waited < 0.4 do
+            task.wait(0.05)
+            waited += 0.05
+            after = gold.Value
+
+            if after < before then break end
+        end
+
+        if after < before then
+            -- ✔ SUCCESS
+
+            -- 1. direct return nếu có
+            if t and t.Parent then
+                spawningLock = false
+                return t
+            end
+
+            -- 2. tìm đúng tower vừa spawn (lọc kỹ hơn)
+            local best
+            for _,tower in ipairs(Towers:GetChildren()) do
+                local c = tower:FindFirstChild("Class")
+
+                if c and c.Value == class then
+                    local dist = (tower:GetPivot().Position - cf.Position).Magnitude
+
+                    if dist < 2 then
+                        best = tower
+                        break
+                    end
+                end
+            end
+
+            if best then
+                spawningLock = false
+                return best
+            end
+
+            -- 3. chờ thêm (server chậm)
+            task.wait(0.2)
+        end
+
+        task.wait(0.1)
+    end
 end
 
 -- =====================
