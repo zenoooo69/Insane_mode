@@ -238,11 +238,7 @@ local CUSTOM_COST = {
 }
 
 local function getCost(name, up, towerInstance)
-    if CUSTOM_COST[name] then
-        return CUSTOM_COST[name]
-    end
-
-    local base = BASE_COST[name] or 0
+    local base = CUSTOM_COST[name] or BASE_COST[name] or 0
     local cost = base * (up and upgradeMulti.Value or placeMulti.Value)
 
     -- 🔥 CheaperUpgrades (nếu có)
