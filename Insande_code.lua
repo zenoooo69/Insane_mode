@@ -340,7 +340,7 @@ local function waitGold(name, isUpgrade, towerInstance)
         if gold.Value >= cost then
 
             -- 🔥 RECHECK 1 LẦN CUỐI (fix bug chính)
-            task.wait(0.5)
+            task.wait(0.1)
 
             cost = getCost(name, isUpgrade, towerInstance)
 
