@@ -1,6 +1,6 @@
 -- SERVICES
 -- =====================
-task.wait(1)
+task.wait(0.5)
 local GameStarted = false
 local GameRunning = true
 local bossDead = false
@@ -17,7 +17,7 @@ local ignore = {}
 local RS = game:GetService("ReplicatedStorage")
 
 local AUTO_CHARM = true
-local COOLDOWN = 100
+local COOLDOWN = 99
 local lastUse = 0
 
 task.spawn(function()
@@ -25,7 +25,7 @@ task.spawn(function()
         task.wait(1)
 
         if not AUTO_CHARM then continue end
-        if bossDead then continue end -- 🔥 dừng khi game end
+        if bossDead then continue end
 
         if tick() - lastUse >= COOLDOWN then
             local success = pcall(function()
@@ -34,7 +34,7 @@ task.spawn(function()
 
             if success then
                 lastUse = tick()
-                print("✨ Charm used")
+                print("Charm đã sài")
             end
         end
     end
@@ -43,7 +43,7 @@ end)
 
 local function isIgnored(pos)
     for _,v in ipairs(ignore) do
-        if (v - pos).Magnitude < 3 then -- 🔥 radius fix
+        if (v - pos).Magnitude < 3 then
             return true
         end
     end
@@ -56,7 +56,7 @@ end
 local playerGui = player:WaitForChild("PlayerGui")
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AutoFarmUI"
+screenGui.Name = "Insane Farm"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
@@ -76,7 +76,7 @@ corner.CornerRadius = UDim.new(0, 8)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,0,0,20)
 title.BackgroundTransparency = 1
-title.Text = "69 Insane 67"
+title.Text = "67 Insane 67"
 title.TextColor3 = Color3.fromRGB(255,255,255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
@@ -137,16 +137,6 @@ rebuildLabel.Font = Enum.Font.Gotham
 rebuildLabel.Parent = frame
 
 -- =====================
--- DISCORD WEBHOOK
--- =====================
--- =====================
--- WEBHOOK (REQUEST FIX)
--- =====================
--- =====================
--- WEBHOOK (STABLE VERSION)
--- =====================
-
--- =====================
 -- STATE
 -- =====================
 local REBUILDING = false
@@ -168,7 +158,7 @@ task.spawn(function()
     local info = workspace:WaitForChild("Info")
     local gameRunning = info:WaitForChild("GameRunning")
 
-    task.wait(15) -- ⬅️ CHỐT FIX: đợi game start hẳn
+    task.wait(15) -- đợi game vô ( ~15s )
     GameStarted = true
 
     while true do
@@ -182,7 +172,7 @@ task.spawn(function()
     end
 end)
 -- =====================
--- RESULT CHECK (LOWERCASE FIX)
+-- RESULT CHECK
 -- =====================
 task.spawn(function()
     local info = workspace:WaitForChild("Info")
@@ -215,7 +205,7 @@ task.spawn(function()
 
         local waveValue = wave and wave.Value or 0
 
-        -- 🔥 LOG ONLY (KHÔNG WEBHOOK)
+        -- print win/thua
         if result == "WIN" then
             print("🏆 VICTORY")
             print("User:", player.Name)
@@ -228,7 +218,7 @@ task.spawn(function()
             print("Wave:", waveValue)
         end
 
-        -- 🔥 EXIT GAME
+        -- out game
         task.wait(1)
         pcall(function()
             RS.Events.ExitGame:FireServer()
@@ -271,7 +261,7 @@ local function getCost(name, up, towerInstance)
     local base = CUSTOM_COST[name] or BASE_COST[name] or 0
     local cost = base * (up and upgradeMulti.Value or placeMulti.Value)
 
-    -- 🔥 CheaperUpgrades (nếu có)
+    -- check giá giảm
     if towerInstance and towerInstance:FindFirstChild("Config") then
         local cheaper = towerInstance.Config:FindFirstChild("CheaperUpgrades")
         if cheaper then
@@ -336,10 +326,10 @@ local function waitGold(name, isUpgrade, towerInstance)
 
         local cost = getCost(name, isUpgrade, towerInstance)
 
-        -- ❗ chỉ check điều kiện "ước lượng"
+        -- first check
         if gold.Value >= cost then
 
-            -- 🔥 RECHECK 1 LẦN CUỐI (fix bug chính)
+            -- double check
             task.wait(0.1)
 
             cost = getCost(name, isUpgrade, towerInstance)
@@ -364,10 +354,10 @@ local function waitGoldRebuild(name, isUpgrade, towerInstance)
 
         local cost = getCost(name, isUpgrade, towerInstance)
 
-        -- ❗ check sơ bộ
+        -- first check
         if gold.Value >= cost then
 
-            -- 🔥 recheck để chống cost change giữa frame
+            -- double check
             task.wait(0.5)
 
             if bossDead then return false end
@@ -441,7 +431,7 @@ local function spawnBase(data)
 end
 
 -- =====================
--- UPGRADE (FIX CHUẨN)
+-- UPGRADE
 -- =====================
 local function upgradeTower(tower, lv)
     local class = tower:FindFirstChild("Class").Value
@@ -452,7 +442,7 @@ local function upgradeTower(tower, lv)
     local upgradeName = chain[lv-1]
     if not upgradeName then return nil end
 
-    -- wait đủ tiền
+    -- waitGold
     if not waitGoldRebuild(upgradeName, true, tower) then
         return nil
     end
@@ -464,7 +454,7 @@ local function upgradeTower(tower, lv)
         class
     })
 
-    -- 🔥 CHỈ return khi thành công
+    -- 🔥 return khi success only
     if newTower then
         return newTower
     end
@@ -489,7 +479,7 @@ task.spawn(function()
     while true do
         task.wait(0.05)
 
-        -- đang rebuild thì bỏ qua
+        -- rebuild = ignore
         if rebuildingNow then continue end
         if #rebuildQueue == 0 then continue end
 
@@ -509,10 +499,6 @@ task.spawn(function()
 
         -- =====================
         -- SPAWN BASE
-        -- =====================
-        -- =====================
-        -- SPAWN BASE (SAFE FIX)
-        -- =====================
         local tower
         local tries = 0
         local maxTries = 3
@@ -528,7 +514,7 @@ task.spawn(function()
             task.wait(0.3)
         end
 
-        -- ❌ CHỈ bỏ job này, KHÔNG kill worker
+        
         if not tower then
             REBUILDING = false
             rebuildingNow = false
@@ -557,7 +543,6 @@ task.spawn(function()
                     tower = newTower
                     upgraded = true
                 else
-                    -- ❗ retry chậm để tránh spam server
                     task.wait(0.3)
                 end
             end
@@ -582,7 +567,7 @@ local function process()
 
 
     for k,old in pairs(lastSnapshot) do
-        if isIgnored(old.pos) then continue end -- ⬅️ bỏ qua upgrade
+        if isIgnored(old.pos) then continue end
         if not now[k] and not debounce[k] then
             debounce[k] = true
 
@@ -611,7 +596,7 @@ local function markUpgrade(cf)
 
     table.insert(ignore, pos)
 
-    task.delay(0.5, function() -- 🔥 tăng delay
+    task.delay(0.5, function()
         for i,v in ipairs(ignore) do
             if (v - pos).Magnitude < 0.1 then
                 table.remove(ignore, i)
