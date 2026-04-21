@@ -308,6 +308,13 @@ local UPGRADE_CHAIN = {
         "Lightning Lava",
         "Electrically Trained",
         "Mega Zap Mortar"
+    },
+
+    ["Drone Pilot"] = {
+        "Stable Flying",
+        "Bombs",
+        "Toxic Bombs",
+        "Death Heli"
     }
 }
 
