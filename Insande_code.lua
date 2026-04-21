@@ -935,42 +935,55 @@ for i,g in ipairs(guardians) do
 end
  
 -- =====================
--- MORTAR
+-- DRONE PILOT (5 → LV5)
 -- =====================
-local mortarPos = {
-    CFrame.new(-210.1508,7.8045,-88.8045),
-    CFrame.new(-207.4105,7.8045,-88.3230),
-    CFrame.new(-207.2163,7.8045,-84.7498),
-    CFrame.new(-206.9319,7.8045,-81.8830),
-    CFrame.new(-210.1764,7.8045,-85.8999),
-    CFrame.new(-209.9492,7.8045,-83.2334)
+
+local dronePos = {
+    CFrame.new(-218.5349, 8.0547, -72.9919) * CFrame.Angles(0, -1.5558, 0),
+    CFrame.new(-215.6939, 8.0547, -72.9911) * CFrame.Angles(0, -1.5558, 0),
+    CFrame.new(-213.5199, 8.0576, -76.5772) * CFrame.Angles(0, -1.4760, 0),
+    CFrame.new(-213.5248, 8.0576, -76.6233) * CFrame.Angles(0, -1.4528, 0),
+    CFrame.new(-218.8291, 8.0547, -78.2545) * CFrame.Angles(0, -0.0342, 0)
 }
- 
-local mortars = {}
- 
-for i,cf in ipairs(mortarPos) do
+
+local drones = {}
+
+-- =====================
+-- PLACE ALL (delay 0.5s)
+-- =====================
+for i,cf in ipairs(dronePos) do
     safeWait()
- 
-    waitGold("Electric Mortar",false)
-    task.wait(0.1)
-    local m = spawnTowerSafe({"Electric Mortar",cf,nil,"Lava Mortar","Electric Mortar"})
-    task.wait(0.2)
- 
-    m = safeFix(m, cf, "Lava Mortar")
- 
-    if m then
-        waitGold("Electric Hat",true,m)
-        task.wait(0.1)
-        m = spawnTowerSafe({"Electric Hat",m:GetPivot(),m,"Lava Mortar"})
-        task.wait(0.1)
-        waitGold("Lightning Lava",true,m)
-        m = spawnTowerSafe({"Lightning Lava",m:GetPivot(),m,"Lava Mortar"})
-        waitGold("Electrically Trained",true,m)
-        task.wait(0.1)
-        m = spawnTowerSafe({"Electrically Trained",m:GetPivot(),m,"Lava Mortar"})
- 
-        waitGold("Mega Zap Mortar",true,m)
-        task.wait(0.1)
-        mortars[i] = spawnTowerSafe({"Mega Zap Mortar",m:GetPivot(),m,"Lava Mortar"})
+    waitGold("Helicopter Kid", false)
+
+    drones[i] = spawnTowerSafe({
+        "Helicopter Kid",
+        cf,
+        nil,
+        "Drone Pilot",
+        "Helicopter Kid"
+    })
+
+    task.wait(0.5)
+end
+
+-- =====================
+-- UPGRADE TO LV5
+-- =====================
+for i,d in ipairs(drones) do
+    safeWait()
+    d = safeFix(d, dronePos[i], "Drone Pilot")
+
+    if d then
+        waitGold("Stable Flying", true, d)
+        d = spawnTowerSafe({"Stable Flying", d:GetPivot(), d, "Drone Pilot"})
+
+        waitGold("Bombs", true, d)
+        d = spawnTowerSafe({"Bombs", d:GetPivot(), d, "Drone Pilot"})
+
+        waitGold("Toxic Bombs", true, d)
+        d = spawnTowerSafe({"Toxic Bombs", d:GetPivot(), d, "Drone Pilot"})
+
+        waitGold("Death Heli", true, d)
+        drones[i] = spawnTowerSafe({"Death Heli", d:GetPivot(), d, "Drone Pilot"})
     end
 end
