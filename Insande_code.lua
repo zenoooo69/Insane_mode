@@ -56,7 +56,7 @@ end
 local playerGui = player:WaitForChild("PlayerGui")
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "Insane Farm"
+screenGui.Name = "Insane Ferm"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
