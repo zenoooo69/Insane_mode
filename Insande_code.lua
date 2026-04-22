@@ -385,6 +385,10 @@ local function waitGoldRebuild(name, isUpgrade, towerInstance)
     end
 end
 
+local function safeWait()
+    while REBUILDING or rebuildingNow do task.wait() end
+end
+
 -- =====================
 -- SPAWN
 -- =====================
@@ -599,9 +603,6 @@ lastSnapshot = snapshot()
 -- =====================
 -- SAFE WAIT
 -- =====================
-local function safeWait()
-    while REBUILDING or rebuildingNow do task.wait() end
-end
 
 local function markUpgrade(cf)
     local pos = cf.Position
