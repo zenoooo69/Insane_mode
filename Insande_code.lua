@@ -678,7 +678,7 @@ local function spawnTowerSafe(args)
     local class = args[4]
 
     local startTime = os.clock()
-    local timeout = 60
+    local timeout = 10
 
     while true do
         if bossDead then
@@ -938,8 +938,8 @@ end
 local dronePos = {
     CFrame.new(-218.5349, 8.0547, -72.9919) * CFrame.Angles(0, -1.5558, 0),
     CFrame.new(-215.6939, 8.0547, -72.9911) * CFrame.Angles(0, -1.5558, 0),
-    CFrame.new(-213.5199, 8.0576, -76.5772) * CFrame.Angles(0, -1.4760, 0),
-    CFrame.new(-213.5248, 8.0576, -76.6233) * CFrame.Angles(0, -1.4528, 0),
+    CFrame.new(-213.5199, 7.0576, -76.5772) * CFrame.Angles(0, -1.4760, 0),
+    CFrame.new(-213.5248, 12.0576, -76.6233) * CFrame.Angles(0, -1.4528, 0),
     CFrame.new(-218.8291, 8.0547, -78.2545) * CFrame.Angles(0, -0.0342, 0)
 }
 
