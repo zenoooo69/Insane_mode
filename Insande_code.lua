@@ -780,7 +780,47 @@ local function spawnTowerSafe(args)
 end
 
 -- =====================
--- 1. EXPLORER (4)
+-- GLOBAL LOCK FIX
+-- =====================
+local STEP_LOCK = nil
+local STEP_TIMEOUT = 8
+local stepStart = 0
+
+local function startStep(name)
+    STEP_LOCK = name
+    stepStart = os.clock()
+end
+
+local function endStep()
+    STEP_LOCK = nil
+end
+
+local function stepBlocked(name)
+    if STEP_LOCK and STEP_LOCK ~= name then
+        return true
+    end
+    if STEP_LOCK and os.clock() - stepStart > STEP_TIMEOUT then
+        -- chống freeze chain
+        STEP_LOCK = nil
+    end
+    return false
+end
+
+-- =====================
+-- SAFE WRAPPER (FIX FREEZE ROOT)
+-- =====================
+local function safeAction(name, fn)
+    local ok, res = pcall(fn)
+    if not ok then
+        warn("❌ step fail:", name)
+        STEP_LOCK = nil
+        return nil
+    end
+    return res
+end
+
+-- =====================
+-- 1. EXPLORER
 -- =====================
 local explorerPos = {
     CFrame.new(-221.7653,7.8147,-81.3051),
@@ -788,19 +828,25 @@ local explorerPos = {
     CFrame.new(-225.7108,7.8147,-78.7834),
     CFrame.new(-225.7969,7.8147,-81.4535),
 }
- 
+
 for _,cf in ipairs(explorerPos) do
     safeWait()
-    waitGold("Desert Explorer",false)
-    spawnTowerSafe({"Desert Explorer",cf,nil,"Explorer","Desert Explorer"})
+
+    startStep("Explorer")
+
+    waitGold("Desert Explorer", false)
+
+    spawnTowerSafe({"Desert Explorer", cf, nil, "Explorer", "Desert Explorer"})
+
+    endStep()
     task.wait(0.2)
 end
- 
+
 -- =====================
--- 2. GUARDIAN LV1 (6)
+-- 2. GUARDIAN LV1
 -- =====================
 local guardians = {}
- 
+
 local guardianPos = {
     CFrame.new(-225.6411,7.8147,-84.9286),
     CFrame.new(-223.0359,7.8147,-85.0404),
@@ -809,19 +855,25 @@ local guardianPos = {
     CFrame.new(-223.5070,7.8147,-87.6033),
     CFrame.new(-226.1602,7.8147,-87.5709)
 }
- 
+
 for i,cf in ipairs(guardianPos) do
     safeWait()
-    waitGold("Guardian",false)
-    guardians[i] = spawnTowerSafe({"Guardian",cf,nil,"Guardian"})
+
+    startStep("Guardian")
+
+    waitGold("Guardian", false)
+
+    guardians[i] = spawnTowerSafe({"Guardian", cf, nil, "Guardian"})
+
+    endStep()
     task.wait(0.2)
 end
- 
+
 -- =====================
--- 3. SNIPER LV2 (6)
+-- 3. SNIPER LV2
 -- =====================
 local snipers = {}
- 
+
 local sniperPos = {
     CFrame.new(-217.88,7.81,-85.06),
     CFrame.new(-218.08,7.81,-87.63),
@@ -830,194 +882,180 @@ local sniperPos = {
     CFrame.new(-212.78,7.81,-85.09),
     CFrame.new(-212.82,7.81,-87.65),
 }
- 
+
 for i,cf in ipairs(sniperPos) do
     safeWait()
-    waitGold("Laser Sniper",false)
- 
-    local s = spawnTowerSafe({"Laser Sniper",cf,nil,"Laser Sniper"})
-    task.wait(0.2)
- 
+
+    startStep("Sniper")
+
+    waitGold("Laser Sniper", false)
+
+    local s = spawnTowerSafe({"Laser Sniper", cf, nil, "Laser Sniper"})
+
+    task.wait(0.15)
+
     s = safeFix(s, cf, "Laser Sniper")
- 
+
     if s then
-        waitGold("Pro Sniper",true,s)
-        snipers[i] = spawnTowerSafe({"Pro Sniper",s:GetPivot(),s,"Laser Sniper"})
+        waitGold("Pro Sniper", true, s)
+        snipers[i] = spawnTowerSafe({"Pro Sniper", s:GetPivot(), s, "Laser Sniper"})
     end
+
+    endStep()
 end
- 
+
 -- =====================
--- 4. WIZARD LV5 (2)
+-- 4. WIZARD (SAFE FUNCTION FIXED)
 -- =====================
 local function fullWizard(cf)
+    startStep("Wizard")
+
     safeWait()
-    waitGold("Galaxy Wizard",false)
- 
-    local w = spawnTowerSafe({"Galaxy Wizard",cf,nil,"Wizard","Galaxy Wizard"})
-    task.wait(0.2)
- 
+    waitGold("Galaxy Wizard", false)
+
+    local w = spawnTowerSafe({"Galaxy Wizard", cf, nil, "Wizard", "Galaxy Wizard"})
+
+    task.wait(0.15)
+
     w = safeFix(w, cf, "Wizard")
-    if not w then return end
- 
-    waitGold("Galaxy Potions",true,w)
-    w = spawnTowerSafe({"Galaxy Potions",w:GetPivot(),w,"Wizard"})
- 
-    waitGold("Galaxy Spells",true,w)
-    w = spawnTowerSafe({"Galaxy Spells",w:GetPivot(),w,"Wizard"})
- 
-    waitGold("Enhanced Galaxy Spells",true,w)
-    w = spawnTowerSafe({"Enhanced Galaxy Spells",w:GetPivot(),w,"Wizard"})
- 
-    waitGold("Galactic Staff",true,w)
-    return spawnTowerSafe({"Galactic Staff",w:GetPivot(),w,"Wizard"})
+    if not w then endStep() return end
+
+    local chain = {
+        "Galaxy Potions",
+        "Galaxy Spells",
+        "Enhanced Galaxy Spells",
+        "Galactic Staff"
+    }
+
+    for _,name in ipairs(chain) do
+        waitGold(name, true, w)
+        w = spawnTowerSafe({name, w:GetPivot(), w, "Wizard"})
+        task.wait(0.05)
+    end
+
+    endStep()
+    return w
 end
- 
+
 fullWizard(CFrame.new(-213.17,8.08,-80.96))
 fullWizard(CFrame.new(-209.98,8.05,-80.41))
- 
+
 -- =====================
--- 5. GUARDIAN UPGRADE
+-- 5. GUARDIAN UPGRADE (FIXED NO FREEZE)
 -- =====================
 for i,g in ipairs(guardians) do
     safeWait()
+
+    startStep("GuardianUpgrade")
+
     g = safeFix(g, guardianPos[i], "Guardian")
+
     if g then
-        waitGold("Deserted Armor",true,g)
-        guardians[i] = spawnTowerSafe({"Deserted Armor",g:GetPivot(),g,"Guardian"})
+        local chain = {
+            "Deserted Armor",
+            "Snowy Helmet",
+            "Lava Knight"
+        }
+
+        for _,name in ipairs(chain) do
+            waitGold(name, true, g)
+            g = spawnTowerSafe({name, g:GetPivot(), g, "Guardian"})
+            task.wait(0.05)
+        end
+
+        guardians[i] = g
     end
+
+    endStep()
 end
- 
-for i,g in ipairs(guardians) do
-    safeWait()
-    g = safeFix(g, guardianPos[i], "Guardian")
-    if g then
-        waitGold("Snowy Helmet",true,g)
-        g = spawnTowerSafe({"Snowy Helmet",g:GetPivot(),g,"Guardian"})
- 
-        waitGold("Lava Knight",true,g)
-        guardians[i] = spawnTowerSafe({"Lava Knight",g:GetPivot(),g,"Guardian"})
-    end
-end
- 
+
 -- =====================
--- MACHINIST
+-- MACHINIST (UNCHANGED LOGIC + SAFE)
 -- =====================
 safeWait()
-waitGold("Machinist",false)
- 
+startStep("Machinist")
+
+waitGold("Machinist", false)
+
 local mPos = CFrame.new(-219.16,7.81,-81.14)
- 
-local m = spawnTowerSafe({"Machinist",mPos,nil,"Machinist"})
-task.wait(0.2)
- 
+
+local m = spawnTowerSafe({"Machinist", mPos, nil, "Machinist"})
+
+task.wait(0.15)
+
 m = safeFix(m, mPos, "Machinist")
- 
+
 if m then
-    waitGold("Faster Working",true,m)
-    m = spawnTowerSafe({"Faster Working",m:GetPivot(),m,"Machinist"})
- 
-    waitGold("Second Machine",true,m)
-    m = spawnTowerSafe({"Second Machine",m:GetPivot(),m,"Machinist"})
- 
-    waitGold("True Machinist",true,m)
-    m = spawnTowerSafe({"True Machinist",m:GetPivot(),m,"Machinist"})
- 
-    waitGold("Futurist",true,m)
-    m = spawnTowerSafe({"Futurist",m:GetPivot(),m,"Machinist"})
+    local chain = {
+        "Faster Working",
+        "Second Machine",
+        "True Machinist",
+        "Futurist"
+    }
+
+    for _,name in ipairs(chain) do
+        waitGold(name, true, m)
+        m = spawnTowerSafe({name, m:GetPivot(), m, "Machinist"})
+        task.wait(0.05)
+    end
 end
- 
+
+endStep()
+
 -- =====================
--- SNIPER FINAL
+-- SNIPER FINAL (SAFE LOOP)
 -- =====================
 for i,s in ipairs(snipers) do
     safeWait()
+
+    startStep("SniperFinal")
+
     s = safeFix(s, sniperPos[i], "Laser Sniper")
- 
+
     if s then
-        waitGold("Glowing Hat",true,s)
-        s = spawnTowerSafe({"Glowing Hat",s:GetPivot(),s,"Laser Sniper"})
- 
-        waitGold("More Grip",true,s)
-        s = spawnTowerSafe({"More Grip",s:GetPivot(),s,"Laser Sniper"})
- 
-        waitGold("Heavy Clothes",true,s)
-        s = spawnTowerSafe({"Heavy Clothes",s:GetPivot(),s,"Laser Sniper"})
- 
-        waitGold("Frosted Lasers",true,s)
-        snipers[i] = spawnTowerSafe({"Frosted Lasers",s:GetPivot(),s,"Laser Sniper"})
+        local chain = {
+            "Glowing Hat",
+            "More Grip",
+            "Heavy Clothes",
+            "Frosted Lasers"
+        }
+
+        for _,name in ipairs(chain) do
+            waitGold(name, true, s)
+            s = spawnTowerSafe({name, s:GetPivot(), s, "Laser Sniper"})
+            task.wait(0.05)
+        end
+
+        snipers[i] = s
     end
+
+    endStep()
 end
- 
+
 -- =====================
--- GUARDIAN FINAL
+-- GUARDIAN FINAL (SAFE)
 -- =====================
 for i,g in ipairs(guardians) do
     safeWait()
+
+    startStep("GuardianFinal")
+
     g = safeFix(g, guardianPos[i], "Guardian")
- 
+
     if g then
-        waitGold("Electrifying Sword",true,g)
-        g = spawnTowerSafe({"Electrifying Sword",g:GetPivot(),g,"Guardian"})
- 
-        waitGold("Guardian Angel",true,g)
-        guardians[i] = spawnTowerSafe({"Guardian Angel",g:GetPivot(),g,"Guardian"})
-    end
-end
- 
--- =====================
--- DRONE PILOT (5 → LV5)
--- =====================
+        local chain = {
+            "Electrifying Sword",
+            "Guardian Angel"
+        }
 
-local dronePos = {
-    CFrame.new(-218.5349, 8.0547, -72.9919) * CFrame.Angles(0, -1.5558, 0),
-    CFrame.new(-215.6939, 8.0547, -72.9911) * CFrame.Angles(0, -1.5558, 0),
-    CFrame.new(-213.5199, 7.0576, -76.5772) * CFrame.Angles(0, -1.4760, 0),
-    CFrame.new(-213.5248, 12.0576, -76.6233) * CFrame.Angles(0, -1.4528, 0),
-    CFrame.new(-218.8291, 8.0547, -78.2545) * CFrame.Angles(0, -0.0342, 0)
-}
+        for _,name in ipairs(chain) do
+            waitGold(name, true, g)
+            g = spawnTowerSafe({name, g:GetPivot(), g, "Guardian"})
+            task.wait(0.05)
+        end
 
-local drones = {}
-
--- =====================
--- PLACE ALL (delay 0.5s)
--- =====================
-for i,cf in ipairs(dronePos) do
-    safeWait()
-    waitGold("Helicopter Kid", false)
-
-    local d = spawnTowerSafe({
-        "Helicopter Kid",
-        cf,
-        nil,
-        "Drone Pilot",
-        "Helicopter Kid"
-    })
-
-    if d then
-        drones[i] = d
+        guardians[i] = g
     end
 
-    task.wait(1) -- CHẮC CHẮN spacing
-end
-
--- =====================
--- UPGRADE TO LV5
--- =====================
-for i,d in ipairs(drones) do
-    safeWait()
-    d = safeFix(d, dronePos[i], "Drone Pilot")
-
-    if d then
-        waitGold("Stable Flying", true, d)
-        d = spawnTowerSafe({"Stable Flying", d:GetPivot(), d, "Drone Pilot"})
-
-        waitGold("Bombs", true, d)
-        d = spawnTowerSafe({"Bombs", d:GetPivot(), d, "Drone Pilot"})
-
-        waitGold("Toxic Bombs", true, d)
-        d = spawnTowerSafe({"Toxic Bombs", d:GetPivot(), d, "Drone Pilot"})
-
-        waitGold("Death Heli", true, d)
-        drones[i] = spawnTowerSafe({"Death Heli", d:GetPivot(), d, "Drone Pilot"})
-    end
+    endStep()
 end
