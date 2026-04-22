@@ -670,14 +670,7 @@ end
 -- =====================
 -- AUTO SPAWN WRAPPER (fiX MARK)
 -- =====================
-local spawningLock = false
-
-local COOLDOWN = 0.5
-
 local function spawnTowerSafe(args)
-    if spawningLock then return nil end
-    spawningLock = true
-
     local old = args[3]
     local name = args[1]
     local isUpgrade = old ~= nil
@@ -689,13 +682,11 @@ local function spawnTowerSafe(args)
 
     while true do
         if bossDead then
-            spawningLock = false
             return nil
         end
 
         if os.clock() - startTime > timeout then
             warn("❌ Timeout spawn:", name)
-            spawningLock = false
             return nil
         end
 
@@ -709,57 +700,52 @@ local function spawnTowerSafe(args)
         local before = gold.Value
         local t = spawn(args)
 
-        -- 🔥 wait server sync
+        -- 🔥 chờ server trừ tiền
         local after = before
         local waited = 0
 
-        while waited < 0.4 do
+        while waited < 0.5 do
             task.wait(0.05)
             waited += 0.05
             after = gold.Value
-
             if after < before then break end
         end
 
         if after < before then
-            -- ✔ SUCCESS
-
-            local result = nil
-
-            -- 1. direct return nếu có
+            -- ✔ nếu server trả tower luôn
             if t and t.Parent then
-                result = t
-            else
-                -- 2. tìm tower gần nhất
+                task.wait(0.1) -- đợi model load hoàn chỉnh
+                return t
+            end
+
+            -- 🔍 tìm tower vừa spawn (retry nhiều lần)
+            local found
+            for _ = 1,10 do
                 for _,tower in ipairs(Towers:GetChildren()) do
                     local c = tower:FindFirstChild("Class")
 
                     if c and c.Value == class then
                         local dist = (tower:GetPivot().Position - cf.Position).Magnitude
-
-                        if dist < 2 then
-                            result = tower
+                        if dist < 3 then
+                            found = tower
                             break
                         end
                     end
                 end
+
+                if found then break end
+                task.wait(0.1)
             end
 
-            -- 3. fallback chờ thêm
-            if not result then
-                task.wait(0.2)
+            if found then
+                return found
             end
-
-            -- 🔥 COOLDOWN CHỈ KHI SUCCESS
-            task.wait(COOLDOWN)
-
-            spawningLock = false
-            return result
         end
 
         task.wait(0.1)
     end
 end
+
 -- =====================
 -- 1. EXPLORER (4)
 -- =====================
