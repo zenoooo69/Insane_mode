@@ -385,6 +385,28 @@ local function waitGoldRebuild(name, isUpgrade, towerInstance)
     end
 end
 
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+
+        local target = currentTarget.name
+        local isUp = currentTarget.isUpgrade
+
+        if target then
+            local cost = getCost(target, isUp, nil)
+
+            costLabel.Text = "Cost: " .. cost
+            needLabel.Text = "Need: " .. (cost - gold.Value)
+
+            nextLabel.Text = "Next: " .. target
+        else
+            costLabel.Text = "Cost: 0"
+            needLabel.Text = "Need: 0"
+            nextLabel.Text = "Next: -"
+        end
+    end
+end)
+
 local function safeWait()
     while REBUILDING or rebuildingNow do task.wait() end
 end
