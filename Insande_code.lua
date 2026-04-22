@@ -76,7 +76,7 @@ corner.CornerRadius = UDim.new(0, 8)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,0,0,20)
 title.BackgroundTransparency = 1
-title.Text = "67 Insane 67"
+title.Text = "69 Insane 69"
 title.TextColor3 = Color3.fromRGB(255,255,255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
@@ -672,6 +672,8 @@ end
 -- =====================
 local spawningLock = false
 
+local COOLDOWN = 0.5
+
 local function spawnTowerSafe(args)
     if spawningLock then return nil end
     spawningLock = true
@@ -707,7 +709,7 @@ local function spawnTowerSafe(args)
         local before = gold.Value
         local t = spawn(args)
 
-        -- 🔥 wait server sync (robust)
+        -- 🔥 wait server sync
         local after = before
         local waited = 0
 
@@ -722,40 +724,42 @@ local function spawnTowerSafe(args)
         if after < before then
             -- ✔ SUCCESS
 
+            local result = nil
+
             -- 1. direct return nếu có
             if t and t.Parent then
-                spawningLock = false
-                return t
-            end
+                result = t
+            else
+                -- 2. tìm tower gần nhất
+                for _,tower in ipairs(Towers:GetChildren()) do
+                    local c = tower:FindFirstChild("Class")
 
-            -- 2. tìm đúng tower vừa spawn (lọc kỹ hơn)
-            local best
-            for _,tower in ipairs(Towers:GetChildren()) do
-                local c = tower:FindFirstChild("Class")
+                    if c and c.Value == class then
+                        local dist = (tower:GetPivot().Position - cf.Position).Magnitude
 
-                if c and c.Value == class then
-                    local dist = (tower:GetPivot().Position - cf.Position).Magnitude
-
-                    if dist < 2 then
-                        best = tower
-                        break
+                        if dist < 2 then
+                            result = tower
+                            break
+                        end
                     end
                 end
             end
 
-            if best then
-                spawningLock = false
-                return best
+            -- 3. fallback chờ thêm
+            if not result then
+                task.wait(0.2)
             end
 
-            -- 3. chờ thêm (server chậm)
-            task.wait(0.2)
+            -- 🔥 COOLDOWN CHỈ KHI SUCCESS
+            task.wait(COOLDOWN)
+
+            spawningLock = false
+            return result
         end
 
         task.wait(0.1)
     end
 end
-
 -- =====================
 -- 1. EXPLORER (4)
 -- =====================
