@@ -802,6 +802,8 @@ local function spawnTowerSafe(args)
     end
 end
 
+end
+
 -- =====================
 -- GLOBAL LOCK FIX
 -- =====================
@@ -823,14 +825,13 @@ local function stepBlocked(name)
         return true
     end
     if STEP_LOCK and os.clock() - stepStart > STEP_TIMEOUT then
-        -- chống freeze chain
         STEP_LOCK = nil
     end
     return false
 end
 
 -- =====================
--- SAFE WRAPPER (FIX FREEZE ROOT)
+-- SAFE WRAPPER
 -- =====================
 local function safeAction(name, fn)
     local ok, res = pcall(fn)
@@ -857,9 +858,10 @@ for _,cf in ipairs(explorerPos) do
 
     startStep("Explorer")
 
-    waitGold("Desert Explorer", false)
-
-    spawnTowerSafe({"Desert Explorer", cf, nil, "Explorer", "Desert Explorer"})
+    if not stepBlocked("Explorer") then
+        waitGold("Desert Explorer", false)
+        spawnTowerSafe({"Desert Explorer", cf, nil, "Explorer", "Desert Explorer"})
+    end
 
     endStep()
     task.wait(0.2)
@@ -884,9 +886,10 @@ for i,cf in ipairs(guardianPos) do
 
     startStep("Guardian")
 
-    waitGold("Guardian", false)
-
-    guardians[i] = spawnTowerSafe({"Guardian", cf, nil, "Guardian"})
+    if not stepBlocked("Guardian") then
+        waitGold("Guardian", false)
+        guardians[i] = spawnTowerSafe({"Guardian", cf, nil, "Guardian"})
+    end
 
     endStep()
     task.wait(0.2)
@@ -911,29 +914,37 @@ for i,cf in ipairs(sniperPos) do
 
     startStep("Sniper")
 
-    waitGold("Laser Sniper", false)
+    if not stepBlocked("Sniper") then
+        waitGold("Laser Sniper", false)
 
-    local s = spawnTowerSafe({"Laser Sniper", cf, nil, "Laser Sniper"})
+        local s = spawnTowerSafe({"Laser Sniper", cf, nil, "Laser Sniper"})
 
-    task.wait(0.15)
+        task.wait(0.15)
 
-    s = safeFix(s, cf, "Laser Sniper")
+        s = safeFix(s, cf, "Laser Sniper")
 
-    if s then
-        waitGold("Pro Sniper", true, s)
-        snipers[i] = spawnTowerSafe({"Pro Sniper", s:GetPivot(), s, "Laser Sniper"})
+        if s then
+            waitGold("Pro Sniper", true, s)
+            snipers[i] = spawnTowerSafe({"Pro Sniper", s:GetPivot(), s, "Laser Sniper"})
+        end
     end
 
     endStep()
 end
 
 -- =====================
--- 4. WIZARD (SAFE FUNCTION FIXED)
+-- 4. WIZARD
 -- =====================
 local function fullWizard(cf)
     startStep("Wizard")
 
     safeWait()
+
+    if stepBlocked("Wizard") then
+        endStep()
+        return
+    end
+
     waitGold("Galaxy Wizard", false)
 
     local w = spawnTowerSafe({"Galaxy Wizard", cf, nil, "Wizard", "Galaxy Wizard"})
@@ -951,6 +962,8 @@ local function fullWizard(cf)
     }
 
     for _,name in ipairs(chain) do
+        if stepBlocked("Wizard") then break end
+
         waitGold(name, true, w)
         w = spawnTowerSafe({name, w:GetPivot(), w, "Wizard"})
         task.wait(0.05)
@@ -964,7 +977,7 @@ fullWizard(CFrame.new(-213.17,8.08,-80.96))
 fullWizard(CFrame.new(-209.98,8.05,-80.41))
 
 -- =====================
--- 5. GUARDIAN UPGRADE (FIXED NO FREEZE)
+-- 5. GUARDIAN UPGRADE
 -- =====================
 for i,g in ipairs(guardians) do
     safeWait()
@@ -973,7 +986,7 @@ for i,g in ipairs(guardians) do
 
     g = safeFix(g, guardianPos[i], "Guardian")
 
-    if g then
+    if g and not stepBlocked("GuardianUpgrade") then
         local chain = {
             "Deserted Armor",
             "Snowy Helmet",
@@ -981,6 +994,8 @@ for i,g in ipairs(guardians) do
         }
 
         for _,name in ipairs(chain) do
+            if stepBlocked("GuardianUpgrade") then break end
+
             waitGold(name, true, g)
             g = spawnTowerSafe({name, g:GetPivot(), g, "Guardian"})
             task.wait(0.05)
@@ -993,40 +1008,44 @@ for i,g in ipairs(guardians) do
 end
 
 -- =====================
--- MACHINIST (UNCHANGED LOGIC + SAFE)
+-- MACHINIST
 -- =====================
 safeWait()
 startStep("Machinist")
 
-waitGold("Machinist", false)
+if not stepBlocked("Machinist") then
+    waitGold("Machinist", false)
 
-local mPos = CFrame.new(-219.16,7.81,-81.14)
+    local mPos = CFrame.new(-219.16,7.81,-81.14)
 
-local m = spawnTowerSafe({"Machinist", mPos, nil, "Machinist"})
+    local m = spawnTowerSafe({"Machinist", mPos, nil, "Machinist"})
 
-task.wait(0.15)
+    task.wait(0.15)
 
-m = safeFix(m, mPos, "Machinist")
+    m = safeFix(m, mPos, "Machinist")
 
-if m then
-    local chain = {
-        "Faster Working",
-        "Second Machine",
-        "True Machinist",
-        "Futurist"
-    }
+    if m then
+        local chain = {
+            "Faster Working",
+            "Second Machine",
+            "True Machinist",
+            "Futurist"
+        }
 
-    for _,name in ipairs(chain) do
-        waitGold(name, true, m)
-        m = spawnTowerSafe({name, m:GetPivot(), m, "Machinist"})
-        task.wait(0.05)
+        for _,name in ipairs(chain) do
+            if stepBlocked("Machinist") then break end
+
+            waitGold(name, true, m)
+            m = spawnTowerSafe({name, m:GetPivot(), m, "Machinist"})
+            task.wait(0.05)
+        end
     end
 end
 
 endStep()
 
 -- =====================
--- SNIPER FINAL (SAFE LOOP)
+-- SNIPER FINAL
 -- =====================
 for i,s in ipairs(snipers) do
     safeWait()
@@ -1035,7 +1054,7 @@ for i,s in ipairs(snipers) do
 
     s = safeFix(s, sniperPos[i], "Laser Sniper")
 
-    if s then
+    if s and not stepBlocked("SniperFinal") then
         local chain = {
             "Glowing Hat",
             "More Grip",
@@ -1044,6 +1063,8 @@ for i,s in ipairs(snipers) do
         }
 
         for _,name in ipairs(chain) do
+            if stepBlocked("SniperFinal") then break end
+
             waitGold(name, true, s)
             s = spawnTowerSafe({name, s:GetPivot(), s, "Laser Sniper"})
             task.wait(0.05)
@@ -1056,7 +1077,7 @@ for i,s in ipairs(snipers) do
 end
 
 -- =====================
--- GUARDIAN FINAL (SAFE)
+-- GUARDIAN FINAL
 -- =====================
 for i,g in ipairs(guardians) do
     safeWait()
@@ -1065,19 +1086,88 @@ for i,g in ipairs(guardians) do
 
     g = safeFix(g, guardianPos[i], "Guardian")
 
-    if g then
+    if g and not stepBlocked("GuardianFinal") then
         local chain = {
             "Electrifying Sword",
             "Guardian Angel"
         }
 
         for _,name in ipairs(chain) do
+            if stepBlocked("GuardianFinal") then break end
+
             waitGold(name, true, g)
             g = spawnTowerSafe({name, g:GetPivot(), g, "Guardian"})
             task.wait(0.05)
         end
 
         guardians[i] = g
+    end
+
+    endStep()
+end
+
+-- =====================
+-- 6. DRONE PILOT
+-- =====================
+local dronePos = {
+    CFrame.new(-218.5349, 8.0547, -72.9919) * CFrame.Angles(0, -1.5558, 0),
+    CFrame.new(-215.6939, 8.0547, -72.9911) * CFrame.Angles(0, -1.5558, 0),
+    CFrame.new(-213.5199, 7.0576, -76.5772) * CFrame.Angles(0, -1.4760, 0),
+    CFrame.new(-213.5248, 12.0576, -76.6233) * CFrame.Angles(0, -1.4528, 0),
+    CFrame.new(-218.8291, 8.0547, -78.2545) * CFrame.Angles(0, -0.0342, 0)
+}
+
+local drones = {}
+
+-- =====================
+-- PLACE ALL
+-- =====================
+for i,cf in ipairs(dronePos) do
+    safeWait()
+
+    startStep("Drone")
+
+    waitGold("Helicopter Kid", false)
+
+    drones[i] = spawnTowerSafe({
+        "Helicopter Kid",
+        cf,
+        nil,
+        "Drone Pilot",
+        "Helicopter Kid"
+    })
+
+    endStep()
+    task.wait(0.5)
+end
+
+-- =====================
+-- UPGRADE CHAIN
+-- =====================
+local droneChain = {
+    "Stable Flying",
+    "Bombs",
+    "Toxic Bombs",
+    "Death Heli"
+}
+
+for i,d in ipairs(drones) do
+    safeWait()
+
+    startStep("DroneUpgrade")
+
+    d = safeFix(d, dronePos[i], "Drone Pilot")
+
+    if d then
+        for _,name in ipairs(droneChain) do
+            if stepBlocked("DroneUpgrade") then break end
+
+            waitGold(name, true, d)
+            d = spawnTowerSafe({name, d:GetPivot(), d, "Drone Pilot"})
+            task.wait(0.05)
+        end
+
+        drones[i] = d
     end
 
     endStep()
