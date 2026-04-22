@@ -323,6 +323,7 @@ local UPGRADE_CHAIN = {
 -- =====================
 
 local currentTarget = {}
+local BUILD_LOCK = false
 
 local function waitGold(name, isUpgrade, towerInstance)
     currentTarget.name = name
@@ -331,25 +332,28 @@ local function waitGold(name, isUpgrade, towerInstance)
     while true do
         if bossDead then return false end
 
+        -- ❌ nếu đang có step khác chạy → đứng yên
+        if BUILD_LOCK then
+            task.wait(0.1)
+            continue
+        end
+
         local cost = getCost(name, isUpgrade, towerInstance)
 
-        -- first check
         if gold.Value >= cost then
+            -- 🔥 LOCK NGAY KHI CHUẨN BỊ BUILD
+            BUILD_LOCK = true
 
-            -- double check
-            task.wait(0.1)
+            task.wait(0.05)
 
             cost = getCost(name, isUpgrade, towerInstance)
 
             if gold.Value >= cost then
                 return true
+            else
+                BUILD_LOCK = false
             end
         end
-
-        goldLabel.Text = "Gold: "..gold.Value
-        needLabel.Text = "Need: "..math.max(0, cost - gold.Value)
-        costLabel.Text = "Cost: "..cost
-        nextLabel.Text = "Next: "..name
 
         task.wait(0.1)
     end
@@ -671,6 +675,7 @@ end
 -- AUTO SPAWN WRAPPER (fiX MARK)
 -- =====================
 local function spawnTowerSafe(args)
+    task.wait(0.5)
     local old = args[3]
     local name = args[1]
     local isUpgrade = old ~= nil
@@ -743,6 +748,7 @@ local function spawnTowerSafe(args)
         end
 
         task.wait(0.1)
+        BUILD_LOCK = false
     end
 end
 
@@ -952,7 +958,7 @@ for i,cf in ipairs(dronePos) do
     safeWait()
     waitGold("Helicopter Kid", false)
 
-    drones[i] = spawnTowerSafe({
+    local d = spawnTowerSafe({
         "Helicopter Kid",
         cf,
         nil,
@@ -960,7 +966,11 @@ for i,cf in ipairs(dronePos) do
         "Helicopter Kid"
     })
 
-    task.wait(0.5)
+    if d then
+        drones[i] = d
+    end
+
+    task.wait(1) -- CHẮC CHẮN spacing
 end
 
 -- =====================
