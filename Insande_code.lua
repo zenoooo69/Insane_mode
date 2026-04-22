@@ -77,7 +77,7 @@ corner.CornerRadius = UDim.new(0, 8)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,0,0,20)
 title.BackgroundTransparency = 1
-title.Text = "69 Insane 67"
+title.Text = "67 Insane 67"
 title.TextColor3 = Color3.fromRGB(255,255,255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
@@ -800,8 +800,6 @@ local function spawnTowerSafe(args)
 
         return found
     end
-end
-
 end
 
 -- =====================
