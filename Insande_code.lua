@@ -10,7 +10,8 @@ local gold = player:WaitForChild("leaderstats"):WaitForChild("Gold")
 local RunService = game:GetService("RunService")
 local Towers = workspace:WaitForChild("Towers")
 local ignore = {}
-
+local BUILD_LOCK = false
+local ACTIVE_STEP = nil
 -- =====================
 -- AUTO CHARM
 -- =====================
@@ -323,7 +324,6 @@ local UPGRADE_CHAIN = {
 -- =====================
 
 local currentTarget = {}
-local BUILD_LOCK = false
 
 local function waitGold(name, isUpgrade, towerInstance)
     currentTarget.name = name
@@ -332,8 +332,8 @@ local function waitGold(name, isUpgrade, towerInstance)
     while true do
         if bossDead then return false end
 
-        -- ❌ nếu đang có step khác chạy → đứng yên
-        if BUILD_LOCK then
+        -- 🔒 chặn nếu có step khác
+        if BUILD_LOCK and ACTIVE_STEP ~= name then
             task.wait(0.1)
             continue
         end
@@ -341,8 +341,8 @@ local function waitGold(name, isUpgrade, towerInstance)
         local cost = getCost(name, isUpgrade, towerInstance)
 
         if gold.Value >= cost then
-            -- 🔥 LOCK NGAY KHI CHUẨN BỊ BUILD
             BUILD_LOCK = true
+            ACTIVE_STEP = name
 
             task.wait(0.05)
 
@@ -352,6 +352,7 @@ local function waitGold(name, isUpgrade, towerInstance)
                 return true
             else
                 BUILD_LOCK = false
+                ACTIVE_STEP = nil
             end
         end
 
@@ -675,80 +676,106 @@ end
 -- AUTO SPAWN WRAPPER (fiX MARK)
 -- =====================
 local function spawnTowerSafe(args)
-    task.wait(0.5)
     local old = args[3]
     local name = args[1]
     local isUpgrade = old ~= nil
     local cf = args[2]
     local class = args[4]
 
-    local startTime = os.clock()
     local timeout = 10
+    local startTime = os.clock()
 
     while true do
         if bossDead then
+            BUILD_LOCK = false
+            ACTIVE_STEP = nil
             return nil
         end
 
         if os.clock() - startTime > timeout then
             warn("❌ Timeout spawn:", name)
+            BUILD_LOCK = false
+            ACTIVE_STEP = nil
             return nil
         end
 
         local cost = getCost(name, isUpgrade, old)
 
+        -- ❌ chưa đủ tiền thì đứng yên
         if gold.Value < cost then
             task.wait(0.1)
             continue
         end
 
-        local before = gold.Value
-        local t = spawn(args)
+        -- 🔒 LOCK STEP trước khi spawn
+        BUILD_LOCK = true
+        ACTIVE_STEP = name
 
-        -- 🔥 chờ server trừ tiền
-        local after = before
+        local beforeGold = gold.Value
+
+        -- 👉 spawn
+        local result = RS.Functions.SpawnTower:InvokeServer(unpack(args))
+
+        -- 🔥 chờ server update gold
         local waited = 0
+        local afterGold = beforeGold
 
         while waited < 0.5 do
             task.wait(0.05)
             waited += 0.05
-            after = gold.Value
-            if after < before then break end
+            afterGold = gold.Value
+            if afterGold < beforeGold then
+                break
+            end
         end
 
-        if after < before then
-            -- ✔ nếu server trả tower luôn
-            if t and t.Parent then
-                task.wait(0.1) -- đợi model load hoàn chỉnh
-                return t
-            end
+        -- ❗ nếu không trừ tiền → fail spawn
+        if afterGold >= beforeGold then
+            BUILD_LOCK = false
+            ACTIVE_STEP = nil
+            task.wait(0.2)
+            continue
+        end
 
-            -- 🔍 tìm tower vừa spawn (retry nhiều lần)
-            local found
-            for _ = 1,10 do
-                for _,tower in ipairs(Towers:GetChildren()) do
-                    local c = tower:FindFirstChild("Class")
+        -- =========================
+        -- TRY RETURN TOWER
+        -- =========================
 
-                    if c and c.Value == class then
-                        local dist = (tower:GetPivot().Position - cf.Position).Magnitude
-                        if dist < 3 then
-                            found = tower
-                            break
-                        end
+        -- case 1: server trả luôn model
+        if result and result.Parent then
+            task.wait(0.1)
+            BUILD_LOCK = false
+            ACTIVE_STEP = nil
+            return result
+        end
+
+        -- case 2: phải search lại tower
+        local found
+
+        for _ = 1, 10 do
+            for _, tower in ipairs(Towers:GetChildren()) do
+                local c = tower:FindFirstChild("Class")
+
+                if c and c.Value == class then
+                    local dist = (tower:GetPivot().Position - cf.Position).Magnitude
+                    if dist < 3 then
+                        found = tower
+                        break
                     end
                 end
-
-                if found then break end
-                task.wait(0.1)
             end
 
-            if found then
-                return found
-            end
+            if found then break end
+            task.wait(0.1)
         end
 
-        task.wait(0.1)
+        -- =========================
+        -- DONE
+        -- =========================
         BUILD_LOCK = false
+        ACTIVE_STEP = nil
+
+        return found
     end
 end
 
