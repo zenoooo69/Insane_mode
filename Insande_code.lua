@@ -377,8 +377,6 @@ local UPGRADE_CHAIN = {
 local currentTarget = {}
 
 local function waitGold(name, isUpgrade, towerInstance)
-    if STOP_ALL then return false end
-
     currentTarget.name = name
     currentTarget.isUpgrade = isUpgrade
 
@@ -394,6 +392,7 @@ local function waitGold(name, isUpgrade, towerInstance)
         task.wait(0.1)
     end
 end
+
 
 local function waitGoldRebuild(name, isUpgrade, towerInstance)
     while true do
@@ -909,16 +908,16 @@ local function safeUpgrade(name, tower, class)
 
         waitGold(name, true, tower)
 
-        local new = spawnTowerSafe({name, tower:GetPivot(), tower, class})
+        local new = safeUpgrade(name, tower, class)
 
         if new then
-            return new
+            tower = new
+            task.wait(0.15) -- 🔥 chống double trigger
         end
 
         task.wait(0.2)
     end
 end
-
 -- =====================
 -- BUILD FLOW
 -- =====================
