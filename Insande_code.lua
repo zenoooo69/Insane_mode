@@ -260,6 +260,23 @@ task.spawn(function()
         end)
     end)
 end)
+
+local function waitTowerByCF(class, cf)
+    for _ = 1, 20 do
+        for _, t in ipairs(Towers:GetChildren()) do
+            local c = t:FindFirstChild("Class")
+            if c and c.Value == class then
+                local dist = (t:GetPivot().Position - cf.Position).Magnitude
+                if dist < 3 then
+                    return t
+                end
+            end
+        end
+        task.wait(0.1)
+    end
+    return nil
+end
+
 -- =====================
 -- COST SYSTEM
 -- =====================
