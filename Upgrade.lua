@@ -660,6 +660,8 @@ task.spawn(function()
         rebuildState.active = false
         rebuildState.name   = "-"
         rebuildState.level  = 0
+    end
+end) -- 👈 thêm dòng này
 
 
 
