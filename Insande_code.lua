@@ -908,14 +908,19 @@ local function safeUpgrade(name, tower, class)
 
         waitGold(name, true, tower)
 
-        local new = safeUpgrade(name, tower, class)
+        local new = spawnTowerSafe({
+            name,
+            tower:GetPivot(),
+            tower,
+            class
+        })
 
         if new then
-            tower = new
-            task.wait(0.15) -- 🔥 chống double trigger
+            task.wait(0.15) -- chống double trigger
+            return new -- 🔥 THOÁT NGAY
         end
 
-        task.wait(0.2)
+        task.wait(0.2) -- retry nếu fail
     end
 end
 -- =====================
