@@ -751,7 +751,7 @@ end
 -- AUTO SPAWN WRAPPER (fiX MARK)
 -- =====================
 local function spawnTowerSafe(args)
-    if STOP_ALL then return false end
+    if STOP_ALL then return nil end
     local old = args[3]
     local name = args[1]
     local isUpgrade = old ~= nil
