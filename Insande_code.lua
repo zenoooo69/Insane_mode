@@ -170,21 +170,25 @@ task.spawn(function()
             bossDead = true
             GameRunning = false
 
-            print("🛑 Reached Wave 21 → STOP ALL")
+            print("🛑 Wave 21 → FORCE LOSE")
 
-            -- 👉 SELL ALL TOWERS
-            for _, tower in ipairs(workspace.Towers:GetChildren()) do
-                pcall(function()
-                    game:GetService("ReplicatedStorage").Functions.SellTower:InvokeServer(tower)
-                end)
-                task.wait(0.05)
+            -- 🔥 clear queue rebuild luôn
+            rebuildQueue = {}
+
+            -- 🔥 xóa sạch nhiều lần cho chắc (anti fail)
+            for i = 1, 3 do
+                for _, tower in ipairs(workspace.Towers:GetChildren()) do
+                    pcall(function()
+                        RS.Functions.SellTower:InvokeServer(tower)
+                    end)
+                end
+                task.wait(0.2)
             end
 
             break
         end
     end
 end)
-
 task.spawn(function()
     local info = workspace:WaitForChild("Info")
     local gameRunning = info:WaitForChild("GameRunning")
@@ -662,8 +666,9 @@ local function process()
             debounce[k] = true
 
             task.delay(1,function()
-                  rebuild(old)
-            debounce[k] = nil
+                if STOP_ALL then return end
+                rebuild(old)
+                debounce[k] = nil
             end)
             end
         end
