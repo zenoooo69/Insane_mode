@@ -974,6 +974,7 @@ for i,cf in ipairs(guardianPos) do
 end
 
 -- 3. SNIPER (LV2)
+-- 3. SNIPER (LV2 ALL → LV3 ALL)
 local snipers = {}
 local sniperPos = {
     CFrame.new(-217.88,7.81,-85.06),
@@ -984,11 +985,14 @@ local sniperPos = {
     CFrame.new(-212.82,7.81,-87.65),
 }
 
+-- =====================
+-- STEP 1: PLACE + LV2
+-- =====================
 for i,cf in ipairs(sniperPos) do
     safeWait()
-    startStep("Sniper")
+    startStep("Sniper_LV2")
 
-    if not stepBlocked("Sniper") then
+    if not stepBlocked("Sniper_LV2") then
         waitGold("Laser Sniper", false)
 
         local s = spawnTowerSafe({"Laser Sniper", cf, nil, "Laser Sniper"})
@@ -998,6 +1002,23 @@ for i,cf in ipairs(sniperPos) do
             s = safeUpgrade("Pro Sniper", s, "Laser Sniper")
         end
 
+        snipers[i] = s
+    end
+
+    endStep()
+end
+
+-- =====================
+-- STEP 2: LV3 ALL
+-- =====================
+for i,s in ipairs(snipers) do
+    safeWait()
+    startStep("Sniper_LV3")
+
+    s = safeFix(s, sniperPos[i], "Laser Sniper")
+
+    if s and not stepBlocked("Sniper_LV3") then
+        s = safeUpgrade("Glowing Hat", s, "Laser Sniper")
         snipers[i] = s
     end
 
@@ -1080,6 +1101,7 @@ end
 endStep()
 
 -- 7. SNIPER FINAL
+-- 7. SNIPER FINAL (LV3 → LV6)
 for i,s in ipairs(snipers) do
     safeWait()
     startStep("SniperFinal")
@@ -1087,16 +1109,22 @@ for i,s in ipairs(snipers) do
     s = safeFix(s, sniperPos[i], "Laser Sniper")
 
     if s and not stepBlocked("SniperFinal") then
-        for _,name in ipairs({"Glowing Hat","More Grip","Heavy Clothes","Frosted Lasers"}) do
+        for _,name in ipairs({
+            "More Grip",
+            "Heavy Clothes",
+            "Frosted Lasers"
+        }) do
             local new = safeUpgrade(name, s, "Laser Sniper")
             if not new then break end
             s = new
         end
+
         snipers[i] = s
     end
 
     endStep()
 end
+
 
 -- 8. GUARDIAN FINAL
 for i,g in ipairs(guardians) do
