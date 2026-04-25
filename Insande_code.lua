@@ -12,6 +12,7 @@ local Towers = workspace:WaitForChild("Towers")
 local ignore = {}
 local BUILD_LOCK = false
 local ACTIVE_STEP = nil
+local STOP_ALL = false
 -- =====================
 -- AUTO CHARM
 -- =====================
@@ -154,6 +155,35 @@ local rebuildState = {
 RS.Events.VoteForMap:FireServer("INSANE GeoCage")
 task.wait(1)
 RS.Events.VoteForMap:FireServer("Ready")
+
+task.spawn(function()
+    local info = workspace:WaitForChild("Info")
+    local wave = info:WaitForChild("Wave")
+
+    while true do
+        task.wait(0.2)
+
+        if STOP_ALL or bossDead then break end
+
+        if wave.Value >= 21 then
+            STOP_ALL = true
+            bossDead = true
+            GameRunning = false
+
+            print("🛑 Reached Wave 21 → STOP ALL")
+
+            -- 👉 SELL ALL TOWERS
+            for _, tower in ipairs(workspace.Towers:GetChildren()) do
+                pcall(function()
+                    game:GetService("ReplicatedStorage").Functions.SellTower:InvokeServer(tower)
+                end)
+                task.wait(0.05)
+            end
+
+            break
+        end
+    end
+end)
 
 task.spawn(function()
     local info = workspace:WaitForChild("Info")
@@ -326,6 +356,7 @@ local UPGRADE_CHAIN = {
 local currentTarget = {}
 
 local function waitGold(name, isUpgrade, towerInstance)
+    if STOP_ALL then return false end
     currentTarget.name = name
     currentTarget.isUpgrade = isUpgrade
 
@@ -504,12 +535,13 @@ end
 -- REBUILD QUEUE
 -- =====================
 local function rebuild(data)
+    if STOP_ALL then return end
+
     for _,v in ipairs(rebuildQueue) do
         if (v.pos - data.pos).Magnitude < 1 then return end
     end
     table.insert(rebuildQueue, data)
 end
-
 -- =====================
 -- WORKER (SEQUENTIAL FIX)
 -- =====================
@@ -517,7 +549,21 @@ task.spawn(function()
     while true do
         task.wait(0.05)
 
-        -- rebuild = ignore
+        -- 🛑 STOP ALL → clear hết và nghỉ rebuild
+        if STOP_ALL then
+            rebuildQueue = {}
+            REBUILDING = false
+            rebuildingNow = false
+
+            -- reset state UI
+            rebuildState.active = false
+            rebuildState.name = "-"
+            rebuildState.level = 0
+
+            continue
+        end
+
+        -- đang rebuild thì bỏ qua
         if rebuildingNow then continue end
         if #rebuildQueue == 0 then continue end
 
@@ -531,34 +577,40 @@ task.spawn(function()
             REBUILDING = false
             continue
         end
+
         rebuildState.active = true
         rebuildState.name = data.class
         rebuildState.level = data.level
 
         -- =====================
         -- SPAWN BASE
+        -- =====================
         local tower
         local tries = 0
         local maxTries = 3
 
         while tries < maxTries do
+            if STOP_ALL or bossDead then break end
+
             tower = spawnBase(data)
 
-            if tower then
-                break
-            end
+            if tower then break end
 
             tries += 1
             task.wait(0.3)
         end
 
-        
-        if not tower then
-            REBUILDING = false
+        if STOP_ALL or bossDead then
             rebuildingNow = false
+            REBUILDING = false
             rebuildState.active = false
-            rebuildState.name = "-"
-            rebuildState.level = 0
+            continue
+        end
+
+        if not tower then
+            rebuildingNow = false
+            REBUILDING = false
+            rebuildState.active = false
             continue
         end
 
@@ -566,13 +618,13 @@ task.spawn(function()
         -- UPGRADE LOOP
         -- =====================
         for lv = 2, data.level do
-            if bossDead then break end
+            if STOP_ALL or bossDead then break end
             if not tower or not tower.Parent then break end
 
             local upgraded = false
 
             while not upgraded do
-                if bossDead then break end
+                if STOP_ALL or bossDead then break end
                 if not tower or not tower.Parent then break end
 
                 local newTower = upgradeTower(tower, lv)
@@ -589,8 +641,8 @@ task.spawn(function()
         -- =====================
         -- DONE
         -- =====================
-        REBUILDING = false
         rebuildingNow = false
+        REBUILDING = false
         rebuildState.active = false
         rebuildState.name = "-"
         rebuildState.level = 0
@@ -699,6 +751,7 @@ end
 -- AUTO SPAWN WRAPPER (fiX MARK)
 -- =====================
 local function spawnTowerSafe(args)
+    if STOP_ALL then return false end
     local old = args[3]
     local name = args[1]
     local isUpgrade = old ~= nil
