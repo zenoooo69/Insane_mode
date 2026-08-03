@@ -934,6 +934,13 @@ local explorerPos = {
     CFrame.new(-225.7108,7.8147,-78.7834),
     CFrame.new(-225.7969,7.8147,-81.4535),
 }
+local args = {
+    [1] = "AutoSkip",
+    [2] = true
+}
+
+game:GetService("ReplicatedStorage").Events.RequestSettingSave:FireServer(unpack(args))
+
 
 for _,cf in ipairs(explorerPos) do
     safeWait()
