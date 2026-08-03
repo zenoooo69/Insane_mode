@@ -19,7 +19,7 @@ local STOP_ALL = false
 local RS = game:GetService("ReplicatedStorage")
 
 local AUTO_CHARM = true
-local COOLDOWN = 99
+local COOLDOWN = 61
 local lastUse = 0
 
 task.spawn(function()
