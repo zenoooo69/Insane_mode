@@ -113,7 +113,7 @@ end)
 -- GUI
 -- =====================================================================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "Farm GUI"
+screenGui.Name = "Farm GUI67"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
@@ -236,7 +236,7 @@ end
 -- =====================================================================
 -- WAIT GOLD (timeout — không freeze vô hạn)
 -- =====================================================================
-local WAIT_GOLD_TIMEOUT = 45
+local WAIT_GOLD_TIMEOUT = 300
 local currentTarget = { name = nil }
 
 local function waitGold(name, isUpgrade, towerInstance)
@@ -505,6 +505,13 @@ local explorerPos = {
 	CFrame.new(-231.5895538330078, 4.359999656677246, -96.33100128173828),
 	CFrame.new(-233.4455108642578, 4.3600006103515625, -94.32186889648438),
 }
+local args = {
+    [1] = "AutoSkip",
+    [2] = true
+}
+
+game:GetService("ReplicatedStorage").Events.RequestSettingSave:FireServer(unpack(args))
+
 local explorers = {}
 local explorerSkin = resolveName("Explorer", "Desert Explorer")
 for i, cf in ipairs(explorerPos) do
@@ -553,7 +560,7 @@ for i, g in ipairs(gunners) do
 	if STOP_ALL or bossDead then break end
 	g = safeFix(g, gunnerPos[i], "Heavy Gunner")
 	if g then
-		gunners[i] = safeUpgrade("Golden Barels", g, "Heavy Gunner")
+		gunners[i] = safeUpgrade("Golden Barrels", g, "Heavy Gunner")
 	end
 end
 
