@@ -32,6 +32,8 @@ task.spawn(function()
         if tick() - lastUse >= COOLDOWN then
             local success = pcall(function()
                 RS.Events.UseCharm:FireServer(3)
+                RS.Events.UseCharm:FireServer(2)
+                RS.Events.UseCharm:FireServer(1)
             end)
 
             if success then
@@ -78,7 +80,7 @@ corner.CornerRadius = UDim.new(0, 8)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,0,0,20)
 title.BackgroundTransparency = 1
-title.Text = "67 Insane 69"
+title.Text = "67 Insane 69?"
 title.TextColor3 = Color3.fromRGB(255,255,255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
@@ -993,7 +995,7 @@ local sniperPos = {
 }
 
 -- =====================
--- STEP 1: PLACE + LV2
+-- STEP 1: PLACE + LV2 (GIỮ NGUYÊN)
 -- =====================
 for i,cf in ipairs(sniperPos) do
     safeWait()
@@ -1016,23 +1018,66 @@ for i,cf in ipairs(sniperPos) do
 end
 
 -- =====================
--- STEP 2: LV3 ALL
+-- STEP 2: GEO BLASTER LV3 (MỚI CHÈN VÀO)
+-- Xây stack: Geo Blaster → Geometrical Suit → Hacker
 -- =====================
-for i,s in ipairs(snipers) do
-    safeWait()
-    startStep("Sniper_LV3")
+safeWait()
+startStep("GeoBlaster_LV3")
 
-    s = safeFix(s, sniperPos[i], "Laser Sniper")
+if not stepBlocked("GeoBlaster_LV3") then
+    local gbPos = CFrame.new(-211.410400390625, 8.080453872680664, -84.76981353759766)
 
-    if s and not stepBlocked("Sniper_LV3") then
-        s = safeUpgrade("Glowing Hat", s, "Laser Sniper")
-        snipers[i] = s
+    -- 2A. Spawn Geo Blaster gốc
+    waitGold("Geo Blaster", false)
+    local gbSpawn = pcall(function()
+        RS.Functions.SpawnTower:InvokeServer(
+            "Geo Blaster",
+            gbPos * CFrame.Angles(-0, -0.3915376365184784, -0),
+            nil,          -- no parent
+            "Ray Blaster",
+            "Geo Blaster"
+        )
+    end)
+
+    if gbSpawn then
+        task.wait(0.5)
+        local geoBlaster = Towers:FindFirstChild("Geo Blaster")
+
+        -- 2B. Spawn Geometrical Suit chồng lên Geo Blaster
+        if geoBlaster then
+            pcall(function()
+                RS.Functions.SpawnTower:InvokeServer(
+                    "Geometrical Suit",
+                    gbPos * CFrame.Angles(0, -0.3915497064590454, 0),
+                    geoBlaster,
+                    "Ray Blaster"
+                )
+            end)
+            task.wait(0.5)
+        end
+
+        local geoBlasterUpdated = Towers:FindFirstChild("Geo Blaster") 
+            or Towers:FindFirstChild("Geometrical Suit")
+
+        -- 2C. Spawn Hacker chồng lên Geometrical Suit
+        if geoBlasterUpdated then
+            pcall(function()
+                RS.Functions.SpawnTower:InvokeServer(
+                    "Hacker",
+                    gbPos * CFrame.Angles(-3.1415927410125732, 1.4213237762451172, -3.1415927410125732),
+                    geoBlasterUpdated,
+                    "Ray Blaster"
+                )
+            end)
+        end
     end
-
-    endStep()
 end
 
--- 4. WIZARD
+endStep()
+
+-- =====================
+-- STEP 3: WIZARD (CHUYỂN LÊN TRƯỚC SNIPER_LV3)
+-- =====================
 local function fullWizard(cf)
     safeWait()
     startStep("Wizard")
@@ -1066,7 +1111,26 @@ end
 fullWizard(CFrame.new(-213.17,8.08,-80.96))
 fullWizard(CFrame.new(-209.98,8.05,-80.41))
 
--- 5. GUARDIAN UPGRADE
+-- =====================
+-- STEP 4: SNIPER LV3 (CHUYỂN XUỐNG SAU WIZARD)
+-- =====================
+for i,s in ipairs(snipers) do
+    safeWait()
+    startStep("Sniper_LV3")
+
+    s = safeFix(s, sniperPos[i], "Laser Sniper")
+
+    if s and not stepBlocked("Sniper_LV3") then
+        s = safeUpgrade("Glowing Hat", s, "Laser Sniper")
+        snipers[i] = s
+    end
+
+    endStep()
+end
+
+-- =====================
+-- STEP 5: GUARDIAN UPGRADE (GIỮ NGUYÊN)
+-- =====================
 for i,g in ipairs(guardians) do
     safeWait()
     startStep("GuardianUpgrade")
@@ -1085,7 +1149,9 @@ for i,g in ipairs(guardians) do
     endStep()
 end
 
--- 6. MACHINIST
+-- =====================
+-- STEP 6: MACHINIST (GIỮ NGUYÊN)
+-- =====================
 safeWait()
 startStep("Machinist")
 
@@ -1107,8 +1173,9 @@ end
 
 endStep()
 
--- 7. SNIPER FINAL
--- 7. SNIPER FINAL (LV3 → LV6)
+-- =====================
+-- STEP 7: SNIPER FINAL LV3 → LV6 (GIỮ NGUYÊN)
+-- =====================
 for i,s in ipairs(snipers) do
     safeWait()
     startStep("SniperFinal")
@@ -1132,8 +1199,9 @@ for i,s in ipairs(snipers) do
     endStep()
 end
 
-
--- 8. GUARDIAN FINAL
+-- =====================
+-- STEP 8: GUARDIAN FINAL (GIỮ NGUYÊN)
+-- =====================
 for i,g in ipairs(guardians) do
     safeWait()
     startStep("GuardianFinal")
@@ -1152,7 +1220,9 @@ for i,g in ipairs(guardians) do
     endStep()
 end
 
--- 9. DRONE
+-- =====================
+-- STEP 9: DRONE (GIỮ NGUYÊN)
+-- =====================
 local dronePos = {
     CFrame.new(-218.5349,8.0547,-72.9919)*CFrame.Angles(0,-1.5558,0),
     CFrame.new(-215.6939,8.0547,-72.9911)*CFrame.Angles(0,-1.5558,0),
