@@ -309,8 +309,8 @@ local CUSTOM_COST = {
     ["Galaxy Spells"] = 3450,
     ["Enhanced Galaxy Spells"] = 7750,
     ["Galactic Staff"] = 56500,
-    ["Geo Blaster"] = 2875
-    ["Geometrical Suit"] = 1200
+    ["Geo Blaster"] = 2875,
+    ["Geometrical Suit"] = 1200,
     ["Hacker"] = 3875
 }
 
