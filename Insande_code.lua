@@ -302,11 +302,11 @@ for _, f in ipairs(RS.Towers:GetChildren()) do
 end
 
 local CUSTOM_COST = {
-    ["Galaxy Wizard"] = 3500,
-    ["Galaxy Potions"] = 2000,
-    ["Galaxy Spells"] = 4400,
-    ["Enhanced Galaxy Spells"] = 7800,
-    ["Galactic Staff"] = 41650
+    ["Galaxy Wizard"] = 950,
+    ["Galaxy Potions"] = 1350,
+    ["Galaxy Spells"] = 3450,
+    ["Enhanced Galaxy Spells"] = 7750,
+    ["Galactic Staff"] = 56500
 }
 
 local function getCost(name, up, towerInstance)
