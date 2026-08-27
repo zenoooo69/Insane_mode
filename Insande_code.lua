@@ -1001,59 +1001,27 @@ local sniperPos = {
 -- =====================
 -- STEP 1: GEO BLASTER LV3 (GIỮ NGUYÊN)
 -- =====================
-safeWait()
-startStep("GeoBlaster_LV3")
+for i,cf in ipairs(sniperPos) do
+    safeWait()
+    startStep("Sniper_LV2")
 
-if not stepBlocked("GeoBlaster_LV3") then
-    local gbPos = CFrame.new(-211.410400390625, 8.080453872680664, -84.76981353759766)
+    if not stepBlocked("Sniper_LV2") then
+        waitGold("Laser Sniper", false)
 
-    -- 1A. Spawn Geo Blaster gốc
-    waitGold("Geo Blaster", false)
-    local gbSpawn = pcall(function()
-        RS.Functions.SpawnTower:InvokeServer(
-            "Geo Blaster",
-            gbPos * CFrame.Angles(-0, -0.3915376365184784, -0),
-            nil,
-            "Ray Blaster",
-            "Geo Blaster"
-        )
-    end)
+        local s = spawnTowerSafe({"Laser Sniper", cf, nil, "Laser Sniper"})
+        -- KHÔNG safeFix — bỏ rebuild
 
-    if gbSpawn then
-        task.wait(0.5)
-        local geoBlaster = Towers:FindFirstChild("Geo Blaster")
-
-        -- 1B. Spawn Geometrical Suit
-        if geoBlaster then
-            pcall(function()
-                RS.Functions.SpawnTower:InvokeServer(
-                    "Geometrical Suit",
-                    gbPos * CFrame.Angles(0, -0.3915497064590454, 0),
-                    geoBlaster,
-                    "Ray Blaster"
-                )
-            end)
-            task.wait(0.5)
+        if s then
+            s = safeUpgrade("Pro Sniper", s, "Laser Sniper")
         end
 
-        local geoBlasterUpdated = Towers:FindFirstChild("Geo Blaster")
-            or Towers:FindFirstChild("Geometrical Suit")
-
-        -- 1C. Spawn Hacker
-        if geoBlasterUpdated then
-            pcall(function()
-                RS.Functions.SpawnTower:InvokeServer(
-                    "Hacker",
-                    gbPos * CFrame.Angles(-3.1415927410125732, 1.4213237762451172, -3.1415927410125732),
-                    geoBlasterUpdated,
-                    "Ray Blaster"
-                )
-            end)
-        end
+        snipers[i] = s
     end
+
+    endStep()
 end
 
-endStep()
+
 
 -- =====================
 -- STEP 2: WIZARD × 2 → GALACTIC STAFF (TRƯỚC SNIPER)
@@ -1095,26 +1063,6 @@ fullWizard(CFrame.new(-209.98,8.05,-80.41))
 -- =====================
 -- STEP 3: SNIPER × 5 → LV2 (SAU WIZARD)
 -- =====================
-for i,cf in ipairs(sniperPos) do
-    safeWait()
-    startStep("Sniper_LV2")
-
-    if not stepBlocked("Sniper_LV2") then
-        waitGold("Laser Sniper", false)
-
-        local s = spawnTowerSafe({"Laser Sniper", cf, nil, "Laser Sniper"})
-        -- KHÔNG safeFix — bỏ rebuild
-
-        if s then
-            s = safeUpgrade("Pro Sniper", s, "Laser Sniper")
-        end
-
-        snipers[i] = s
-    end
-
-    endStep()
-end
-
 -- =====================
 -- STEP 4: SNIPER LV3 (GLOWING HAT) — 5 CON
 -- =====================
