@@ -1152,10 +1152,6 @@ for i,g in ipairs(guardians) do
 
     endStep()
 end
-
--- =====================
--- STEP 6: MACHINIST (BỎ REBUILD)
--- =====================
 safeWait()
 startStep("Machinist")
 
