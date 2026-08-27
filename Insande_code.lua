@@ -308,7 +308,10 @@ local CUSTOM_COST = {
     ["Galaxy Potions"] = 1350,
     ["Galaxy Spells"] = 3450,
     ["Enhanced Galaxy Spells"] = 7750,
-    ["Galactic Staff"] = 56500
+    ["Galactic Staff"] = 56500,
+    ["Geo Blaster"] = 2875
+    ["Geometrical Suit"] = 1200
+    ["Hacker"] = 3875
 }
 
 local function getCost(name, up, towerInstance)
@@ -1025,7 +1028,7 @@ safeWait()
 startStep("GeoBlaster_LV3")
 
 if not stepBlocked("GeoBlaster_LV3") then
-    local gbPos = CFrame.new(-211.410400390625, 8.080453872680664, -84.76981353759766)
+    local gbPos = CFrame.new(-211.410400390625, 9.580453872680664, -84.76981353759766)
 
     -- 2A. Spawn Geo Blaster gốc
     waitGold("Geo Blaster", false)
